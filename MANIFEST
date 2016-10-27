@@ -1,0 +1,7 @@
+MANIFEST
+Makefile.PL
+TIFF.xs
+lib/Graphics/TIFF.pm
+t/1.t
+tiffperl.h
+typemap

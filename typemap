@@ -1,0 +1,20 @@
+TYPEMAP
+
+TIFF			T_TIFF
+TIFF *                  T_PTRREF
+
+
+INPUT
+
+T_TIFF
+   if (sv_derived_from($arg, \"Graphics::TIFF::Image\")) {
+       $var = INT2PTR (TIFF, SvIV ((SV*)SvRV ($arg)));
+   } else {
+       croak(\"$var is not of type Graphics::TIFF::Image\");
+   }
+
+
+OUTPUT
+
+T_TIFF
+   sv_setref_pv($arg, \"TIFF\", (void*)$var);
