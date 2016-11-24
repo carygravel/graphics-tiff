@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 5;
+use Test::More tests => 7;
 
 BEGIN { use_ok('Graphics::TIFF') };
 
@@ -12,13 +12,18 @@ my $version = Graphics::TIFF->get_version_scalar;
 isnt $version, undef, 'version';
 
 SKIP: {
-    skip 'libtiff 4.0.6 or better required', 2 unless $version >= 4.000006;
+    skip 'libtiff 4.0.3 or better required', 4 unless $version >= 4.000003;
 
     system("convert rose: test.tif");
 
     my $tif = Graphics::TIFF->Open('test.tif', 'r');
     isa_ok $tif, 'Graphics::TIFF';
-    can_ok $tif, qw(Close);
+    can_ok $tif, qw(Close ReadDirectory GetField);
 
+    is($tif->ReadDirectory, 0, 'ReadDirectory');
+
+    is($tif->GetField(TIFFTAG_IMAGEWIDTH), 70, 'GetField');
+
+    $tif->Close;
     unlink 'test.tif'
 };

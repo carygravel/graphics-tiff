@@ -1,4 +1,4 @@
-package Graphics::TIFF;
+package Graphics::TIFF::Image;
 
 use 5.008005;
 use strict;
@@ -12,46 +12,18 @@ our @ISA = qw(Exporter);
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
-    TIFFTAG_IMAGEWIDTH
-    TIFFTAG_IMAGELENGTH
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
-    TIFFTAG_IMAGEWIDTH
-    TIFFTAG_IMAGELENGTH
 );
 
 our $VERSION = '0.01';
-our $DEBUG = 0;
-our ($STATUS, $_status, $_vc);
 
 require XSLoader;
-XSLoader::load('Graphics::TIFF', $VERSION);
+XSLoader::load('Graphics::TIFF::Image', $VERSION);
 
-sub get_version {
-    my ($version) = Graphics::TIFF->GetVersion;
-    if ($version =~ /LIBTIFF,[ ]Version[ ](\d+)[.](\d+)[.](\d+)/xsm) {
-        return $1, $2, $3;
-    }
-    return;
-}
-
-sub get_version_scalar {
-    my (@version) = Graphics::TIFF->get_version;
-    if (defined $version[0] and defined $version[1] and defined $version[2]) {
-        return $version[0] + $version[1]/1000 + $version[2]/1000000;
-    }
-    return;
-}
-
-sub Open {
-    my ($class, $path, $flags) = @_;
-    my $self = Graphics::TIFF->_Open($path, $flags);
-    bless (\$self, $class);
-    return \$self;
-}
 
 1;
 __END__
