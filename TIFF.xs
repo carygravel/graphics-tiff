@@ -73,3 +73,9 @@ tiff_GetField (tif, tag)
                                 }
                                 break;
                 } 
+
+void
+tiff_ScanlineSize (tif)
+                TIFF            *tif
+        PPCODE:
+                XPUSHs(sv_2mortal(newSViv(TIFFScanlineSize(tif))));
