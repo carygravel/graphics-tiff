@@ -2,6 +2,7 @@ TYPEMAP
 
 TIFF			T_TIFF
 TIFF *                  T_PTRREF
+uint16			T_IV
 uint32			T_IV
 
 

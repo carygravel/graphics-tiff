@@ -85,3 +85,11 @@ tiff_StripSize (tif)
                 TIFF            *tif
         PPCODE:
                 XPUSHs(sv_2mortal(newSViv(TIFFStripSize(tif))));
+
+void
+tiff_ComputeStrip (tif, row, sample)
+                TIFF            *tif
+                uint32          row
+                uint16          sample
+        PPCODE:
+                XPUSHs(sv_2mortal(newSViv(TIFFComputeStrip(tif, row, sample))));
