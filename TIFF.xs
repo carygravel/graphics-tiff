@@ -93,3 +93,19 @@ tiff_ComputeStrip (tif, row, sample)
                 uint16          sample
         PPCODE:
                 XPUSHs(sv_2mortal(newSViv(TIFFComputeStrip(tif, row, sample))));
+
+void
+tiff_ReadEncodedStrip (tif, strip, size)
+                TIFF            *tif
+                uint32          strip
+                tmsize_t        size
+	INIT:
+                void            *buf;
+                tmsize_t        stripsize;
+        PPCODE:
+                stripsize = TIFFStripSize(tif);
+                buf = (unsigned char *)_TIFFmalloc(stripsize);
+                if (TIFFReadEncodedStrip(tif, strip, buf, size)) {
+                    XPUSHs(sv_2mortal(newSVpvn(buf, stripsize)));
+                }
+		_TIFFfree(buf);
