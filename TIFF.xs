@@ -79,3 +79,9 @@ tiff_ScanlineSize (tif)
                 TIFF            *tif
         PPCODE:
                 XPUSHs(sv_2mortal(newSViv(TIFFScanlineSize(tif))));
+
+void
+tiff_StripSize (tif)
+                TIFF            *tif
+        PPCODE:
+                XPUSHs(sv_2mortal(newSViv(TIFFStripSize(tif))));
