@@ -6,6 +6,7 @@ uint16			T_IV
 uint32			T_IV
 uint64			T_IV
 tmsize_t                T_IV
+toff_t                  T_IV
 
 
 INPUT
