@@ -50,6 +50,13 @@ tiff_SetDirectory (tif, dirnum)
 	        XPUSHs(sv_2mortal(newSViv(TIFFSetDirectory(tif, dirnum))));
 
 void
+tiff_SetSubDirectory(tif, diroff)
+                TIFF		*tif
+                uint64          diroff;
+        PPCODE:
+	        XPUSHs(sv_2mortal(newSViv(TIFFSetSubDirectory(tif, diroff))));
+
+void
 tiff_GetField (tif, tag)
                 TIFF            *tif
                 uint32          tag
