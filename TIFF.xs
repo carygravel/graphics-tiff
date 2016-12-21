@@ -43,6 +43,13 @@ tiff_ReadDirectory (tif)
 	        XPUSHs(sv_2mortal(newSViv(TIFFReadDirectory(tif))));
 
 void
+tiff_SetDirectory (tif, dirnum)
+                TIFF		*tif
+                uint16          dirnum;
+        PPCODE:
+	        XPUSHs(sv_2mortal(newSViv(TIFFSetDirectory(tif, dirnum))));
+
+void
 tiff_GetField (tif, tag)
                 TIFF            *tif
                 uint32          tag
