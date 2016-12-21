@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 18;
+use Test::More tests => 19;
 
 BEGIN { use_ok('Graphics::TIFF') };
 
@@ -12,7 +12,7 @@ my $version = Graphics::TIFF->get_version_scalar;
 isnt $version, undef, 'version';
 
 SKIP: {
-    skip 'libtiff 4.0.3 or better required', 15 unless $version >= 4.000003;
+    skip 'libtiff 4.0.3 or better required', 16 unless $version >= 4.000003;
 
     system("convert rose: test.tif");
 
@@ -35,6 +35,8 @@ SKIP: {
     is($tif->ScanlineSize, 210, 'ScanlineSize');
 
     is($tif->StripSize, 8190, 'StripSize');
+
+    is($tif->NumberOfStrips, 2, 'NumberOfStrips');
 
     is($tif->TileSize, 8190, 'TileSize');
 
