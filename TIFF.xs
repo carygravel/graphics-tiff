@@ -96,6 +96,12 @@ tiff_GetField (tif, tag)
                 } 
 
 void
+tiff_IsTiled (tif)
+                TIFF            *tif
+        PPCODE:
+                XPUSHs(sv_2mortal(newSViv(TIFFIsTiled(tif))));
+
+void
 tiff_ScanlineSize (tif)
                 TIFF            *tif
         PPCODE:
