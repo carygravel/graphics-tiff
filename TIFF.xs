@@ -156,6 +156,22 @@ tiff_ReadEncodedStrip (tif, strip, size)
 		_TIFFfree(buf);
 
 void
+tiff_ReadRawStrip (tif, strip, size)
+                TIFF            *tif
+                uint32          strip
+                tmsize_t        size
+	INIT:
+                void            *buf;
+                tmsize_t        stripsize;
+        PPCODE:
+                stripsize = TIFFStripSize(tif);
+                buf = (unsigned char *)_TIFFmalloc(stripsize);
+                if (TIFFReadRawStrip(tif, strip, buf, size)) {
+                    XPUSHs(sv_2mortal(newSVpvn(buf, stripsize)));
+                }
+		_TIFFfree(buf);
+
+void
 tiff_ReadTile (tif, x, y, z, s)
                 TIFF            *tif
                 uint32          x
