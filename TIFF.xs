@@ -188,3 +188,11 @@ tiff_ReadTile (tif, x, y, z, s)
                     XPUSHs(sv_2mortal(newSVpvn(buf, tilesize)));
                 }
 		_TIFFfree(buf);
+
+void
+tiff_PrintDirectory (tif, file, flags)
+                TIFF            *tif
+                FILE            *file
+                long            flags
+        CODE:
+                TIFFPrintDirectory(tif, file, flags);
