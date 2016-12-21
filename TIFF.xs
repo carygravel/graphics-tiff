@@ -108,6 +108,12 @@ tiff_StripSize (tif)
                 XPUSHs(sv_2mortal(newSViv(TIFFStripSize(tif))));
 
 void
+tiff_TileSize (tif)
+                TIFF            *tif
+        PPCODE:
+                XPUSHs(sv_2mortal(newSViv(TIFFTileSize(tif))));
+
+void
 tiff_TileRowSize (tif)
                 TIFF            *tif
         PPCODE:
