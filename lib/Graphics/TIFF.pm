@@ -103,7 +103,7 @@ Jeffrey Ratcliffe, E<lt>Jeffrey.Ratcliffe@gmail.comE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2016 by Jeffrey Ratcliffe
+Copyright (C) 2017 by Jeffrey Ratcliffe
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.5 or,
