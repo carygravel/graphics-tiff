@@ -14,6 +14,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw(
     TIFFTAG_IMAGEWIDTH
     TIFFTAG_IMAGELENGTH
+    TIFFTAG_EXIFIFD
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -21,6 +22,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
     TIFFTAG_IMAGEWIDTH
     TIFFTAG_IMAGELENGTH
+    TIFFTAG_EXIFIFD
 );
 
 our $VERSION = '0.01';
