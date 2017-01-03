@@ -1,4 +1,4 @@
-use Test::More tests => 3;
+use Test::More tests => 6;
 use warnings;
 use strict;
 
@@ -11,7 +11,15 @@ is(`$cmd test.tif`, `tiffinfo test.tif`, 'basic multi-directory');
 
 is(`$cmd -2 test.tif`, `tiffinfo -2 test.tif`, 'dirnum');
 
-is(`$cmd -d test.tif`, `tiffinfo -d test.tif`, 'showdata');
+system('convert rose: test.tif');
+
+is(`$cmd -d test.tif`, `tiffinfo -d test.tif`, '-d');
+
+is(`$cmd -D test.tif`, `tiffinfo -D test.tif`, '-D');
+
+is(`$cmd -d -f lsb2msb test.tif`, `tiffinfo -d -f lsb2msb test.tif`, '-f lsb2msb');
+
+is(`$cmd -d -f msb2lsb test.tif`, `tiffinfo -d -f msb2lsb test.tif`, '-f msb2lsb');
 
 #########################
 

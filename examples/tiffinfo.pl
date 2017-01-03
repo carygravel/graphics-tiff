@@ -3,17 +3,32 @@ use warnings;
 use strict;
 use Graphics::TIFF;
 
-my ($dirnum, $showdata, $rawdata, $readdata);
+my ($optarg, $dirnum, $showdata, $rawdata, $readdata);
 my $optind = 0;
+my $order = 0;
 my $stoponerr = 1;
 
-while (my $c = getopt("0123456789")) {
+while (my $c = getopt("f:dD0123456789")) {
     if (ord($c) >= ord('0') and ord($c) <= ord('9')) {
         $dirnum = substr($ARGV[$optind-1], 1);
     }
     elsif ($c eq 'd') {
         $showdata++;
         $readdata++;
+    }
+    elsif ($c eq 'D') {
+        $readdata++;
+    }
+    elsif ($c eq 'f') {
+        if ($optarg eq 'lsb2msb' ) {
+            $order = FILLORDER_LSB2MSB;
+        }
+        elsif ($optarg eq 'msb2lsb' ) {
+            $order = FILLORDER_MSB2LSB;
+        }
+        else {
+            usage();
+        }
     }
 }
 
@@ -24,16 +39,16 @@ while ($optind < @ARGV) {
     if (defined $tif) {
         if (defined $dirnum) {
             if ($tif->SetDirectory($dirnum)) {
-                tiffinfo($tif, 0, 0, 1);
+                tiffinfo($tif, $order, 0, 1);
             }
         }
         else {
             do {
-                tiffinfo($tif, 0, 0, 1);
+                tiffinfo($tif, $order, 0, 1);
                 my $offset = $tif->GetField(TIFFTAG_EXIFIFD);
                 if (defined $offset) {
                     if ($tif->ReadEXIFDirectory($offset)) {
-                        tiffinfo($tif, 0, 0, 0);
+                        tiffinfo($tif, $order, 0, 0);
                     }
                 }
             } while ($tif->ReadDirectory);
@@ -47,8 +62,14 @@ sub getopt {
     my ($options) = @_;
     my $c;
     if (substr($ARGV[$optind], 0, 1) eq '-') {
-        $c = substr($ARGV[$optind], 1, 1);
-        $optind++;
+        $c = substr($ARGV[$optind++], 1, 1);
+        if ($options =~ /$c(:)?/xsm) {
+            if (defined $1) { $optarg = $ARGV[$optind++] }
+        }
+        else {
+            undef $c;
+            $optind = $#ARGV + 1;
+        }
     }
     return $c
 }
@@ -117,6 +138,7 @@ sub tiffinfo {
     if ($rawdata) {
     }
     else {
+        if ($order) { $tif->SetField(TIFFTAG_FILLORDER, $order) }
         ReadData($tif);
     }
     return;
