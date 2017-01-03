@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 21;
+use Test::More tests => 23;
 
 BEGIN { use_ok('Graphics::TIFF') };
 
@@ -12,7 +12,7 @@ my $version = Graphics::TIFF->get_version_scalar;
 isnt $version, undef, 'version';
 
 SKIP: {
-    skip 'libtiff 4.0.3 or better required', 18 unless $version >= 4.000003;
+    skip 'libtiff 4.0.3 or better required', 20 unless $version >= 4.000003;
 
     system("convert rose: test.tif");
 
@@ -28,7 +28,10 @@ SKIP: {
 
     is($tif->SetSubDirectory(0), 0, 'SetSubDirectory');
 
-    is($tif->GetField(TIFFTAG_IMAGEWIDTH), 70, 'GetField');
+    is($tif->GetField(TIFFTAG_FILLORDER), FILLORDER_MSB2LSB, 'GetField');
+
+    is($tif->SetField(TIFFTAG_FILLORDER, FILLORDER_LSB2MSB), 1, 'SetField status');
+    is($tif->GetField(TIFFTAG_FILLORDER), FILLORDER_LSB2MSB, 'SetField result');
 
     is($tif->IsTiled, 0, 'IsTiled');
 

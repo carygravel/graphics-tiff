@@ -100,7 +100,24 @@ tiff_GetField (tif, tag)
                                         XPUSHs(sv_2mortal(newSViv(v4)));
                                 }
                                 break;
-                } 
+                }
+
+void
+tiff_SetField (tif, tag, v1, ...)
+                TIFF            *tif
+                uint32          tag
+                uint32          v1
+        PPCODE:
+                switch (items) {
+                        case 3: XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, v1))));
+                                break;
+                        case 4: XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, v1, ST(3)))));
+                                break;
+                        case 5: XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, v1, ST(3), ST(4)))));
+                                break;
+                        case 6: XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, v1, ST(3), ST(4), ST(5)))));
+                                break;
+                }
 
 void
 tiff_IsTiled (tif)
