@@ -11,7 +11,7 @@ my $optind = 0;
 my $order = 0;
 my $stoponerr = 1;
 
-while (my $c = getopt("f:cdD0123456789")) {
+while (my $c = getopt("f:cdDi0123456789")) {
     given ( $c ) {
         when (/[0-9]/xsm) {
             $dirnum = substr($ARGV[$optind-1], 1);
@@ -33,6 +33,9 @@ while (my $c = getopt("f:cdD0123456789")) {
             elsif ($optarg eq 'msb2lsb' ) {
                 $order = FILLORDER_MSB2LSB;
             }
+        }
+        when ('i') {
+            $stoponerr = 0;
         }
         default {
             usage();
