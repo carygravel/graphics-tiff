@@ -1,4 +1,4 @@
-use Test::More tests => 10;
+use Test::More tests => 12;
 use warnings;
 use strict;
 BEGIN { use_ok('Graphics::TIFF') };
@@ -17,3 +17,6 @@ is (TIFFTAG_PLANARCONFIG, 284, "TIFFTAG_PLANARCONFIG");
 is (PLANARCONFIG_CONTIG, 1, "PLANARCONFIG_CONTIG");
 
 is (TIFFTAG_EXIFIFD, 34665, "TIFFTAG_EXIFIFD");
+
+is (TIFFPRINT_CURVES, 2, "TIFFPRINT_CURVES");
+is (TIFFPRINT_COLORMAP, 4, "TIFFPRINT_COLORMAP");
