@@ -11,54 +11,58 @@ our @ISA = qw(Exporter);
 # This allows declaration	use Graphics::TIFF ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-    TIFFTAG_IMAGEWIDTH
-    TIFFTAG_IMAGELENGTH
-    TIFFTAG_FILLORDER
-    FILLORDER_MSB2LSB
-    FILLORDER_LSB2MSB
-    TIFFTAG_ROWSPERSTRIP
-    TIFFTAG_STRIPBYTECOUNTS
-    TIFFTAG_PLANARCONFIG
-    PLANARCONFIG_CONTIG
-    TIFFTAG_EXIFIFD
-    TIFFPRINT_CURVES
-    TIFFPRINT_COLORMAP
-    TIFFPRINT_JPEGQTABLES
-    TIFFPRINT_JPEGACTABLES
-    TIFFPRINT_JPEGDCTABLES
-) ] );
+our %EXPORT_TAGS = (
+    'all' => [
+        qw(
+          TIFFTAG_IMAGEWIDTH
+          TIFFTAG_IMAGELENGTH
+          TIFFTAG_FILLORDER
+          FILLORDER_MSB2LSB
+          FILLORDER_LSB2MSB
+          TIFFTAG_ROWSPERSTRIP
+          TIFFTAG_STRIPBYTECOUNTS
+          TIFFTAG_PLANARCONFIG
+          PLANARCONFIG_CONTIG
+          TIFFTAG_EXIFIFD
+          TIFFPRINT_CURVES
+          TIFFPRINT_COLORMAP
+          TIFFPRINT_JPEGQTABLES
+          TIFFPRINT_JPEGACTABLES
+          TIFFPRINT_JPEGDCTABLES
+          )
+    ]
+);
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
-    TIFFTAG_IMAGEWIDTH
-    TIFFTAG_IMAGELENGTH
-    TIFFTAG_FILLORDER
-    FILLORDER_MSB2LSB
-    FILLORDER_LSB2MSB
-    TIFFTAG_ROWSPERSTRIP
-    TIFFTAG_STRIPBYTECOUNTS
-    TIFFTAG_PLANARCONFIG
-    PLANARCONFIG_CONTIG
-    TIFFTAG_EXIFIFD
-    TIFFPRINT_CURVES
-    TIFFPRINT_COLORMAP
-    TIFFPRINT_JPEGQTABLES
-    TIFFPRINT_JPEGACTABLES
-    TIFFPRINT_JPEGDCTABLES
+  TIFFTAG_IMAGEWIDTH
+  TIFFTAG_IMAGELENGTH
+  TIFFTAG_FILLORDER
+  FILLORDER_MSB2LSB
+  FILLORDER_LSB2MSB
+  TIFFTAG_ROWSPERSTRIP
+  TIFFTAG_STRIPBYTECOUNTS
+  TIFFTAG_PLANARCONFIG
+  PLANARCONFIG_CONTIG
+  TIFFTAG_EXIFIFD
+  TIFFPRINT_CURVES
+  TIFFPRINT_COLORMAP
+  TIFFPRINT_JPEGQTABLES
+  TIFFPRINT_JPEGACTABLES
+  TIFFPRINT_JPEGDCTABLES
 );
 
 our $VERSION = '0.01';
-our $DEBUG = 0;
-our ($STATUS, $_status, $_vc);
+our $DEBUG   = 0;
+our ( $STATUS, $_status, $_vc );
 
 require XSLoader;
-XSLoader::load('Graphics::TIFF', $VERSION);
+XSLoader::load( 'Graphics::TIFF', $VERSION );
 
 sub get_version {
     my ($version) = Graphics::TIFF->GetVersion;
-    if ($version =~ /LIBTIFF,[ ]Version[ ](\d+)[.](\d+)[.](\d+)/xsm) {
+    if ( $version =~ /LIBTIFF,[ ]Version[ ](\d+)[.](\d+)[.](\d+)/xsm ) {
         return $1, $2, $3;
     }
     return;
@@ -66,16 +70,16 @@ sub get_version {
 
 sub get_version_scalar {
     my (@version) = Graphics::TIFF->get_version;
-    if (defined $version[0] and defined $version[1] and defined $version[2]) {
-        return $version[0] + $version[1]/1000 + $version[2]/1000000;
+    if ( defined $version[0] and defined $version[1] and defined $version[2] ) {
+        return $version[0] + $version[1] / 1000 + $version[2] / 1000000;
     }
     return;
 }
 
 sub Open {
-    my ($class, $path, $flags) = @_;
-    my $self = Graphics::TIFF->_Open($path, $flags);
-    bless (\$self, $class);
+    my ( $class, $path, $flags ) = @_;
+    my $self = Graphics::TIFF->_Open( $path, $flags );
+    bless( \$self, $class );
     return \$self;
 }
 
