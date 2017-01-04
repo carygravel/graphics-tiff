@@ -10,8 +10,9 @@ my $flags = 0;
 my $optind = 0;
 my $order = 0;
 my $stoponerr = 1;
+my $diroff = 0;
 
-while (my $c = getopt("f:cdDi0123456789")) {
+while (my $c = getopt("f:o:cdDi0123456789")) {
     given ( $c ) {
         when (/[0-9]/xsm) {
             $dirnum = substr($ARGV[$optind-1], 1);
@@ -37,6 +38,9 @@ while (my $c = getopt("f:cdDi0123456789")) {
         when ('i') {
             $stoponerr = 0;
         }
+        when ('o') {
+            $diroff = $optarg;
+        }
         default {
             usage();
         }
@@ -50,6 +54,11 @@ while ($optind < @ARGV) {
     if (defined $tif) {
         if (defined $dirnum) {
             if ($tif->SetDirectory($dirnum)) {
+                tiffinfo($tif, $order, $flags, 1);
+            }
+        }
+        elsif ($diroff != 0) {
+            if ($tif->SetSubDirectory($diroff)) {
                 tiffinfo($tif, $order, $flags, 1);
             }
         }
