@@ -12,7 +12,7 @@ my $order = 0;
 my $stoponerr = 1;
 my $diroff = 0;
 
-while (my $c = getopt("f:o:cdDi0123456789")) {
+while (my $c = getopt("f:o:cdDij0123456789")) {
     given ( $c ) {
         when (/[0-9]/xsm) {
             $dirnum = substr($ARGV[$optind-1], 1);
@@ -37,6 +37,11 @@ while (my $c = getopt("f:o:cdDi0123456789")) {
         }
         when ('i') {
             $stoponerr = 0;
+        }
+        when ('j') {
+            $flags |= TIFFPRINT_JPEGQTABLES |
+                      TIFFPRINT_JPEGACTABLES |
+                      TIFFPRINT_JPEGDCTABLES;
         }
         when ('o') {
             $diroff = $optarg;
