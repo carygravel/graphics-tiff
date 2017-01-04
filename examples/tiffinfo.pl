@@ -5,14 +5,14 @@ use Graphics::TIFF;
 use feature 'switch';
 no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
-my ($optarg, $dirnum, $showdata, $rawdata, $readdata);
+my ($optarg, $dirnum, $showdata, $rawdata, $showwords, $readdata);
 my $flags = 0;
 my $optind = 0;
 my $order = 0;
 my $stoponerr = 1;
 my $diroff = 0;
 
-while (my $c = getopt("f:o:cdDij0123456789")) {
+while (my $c = getopt("f:o:cdDijr0123456789")) {
     given ( $c ) {
         when (/[0-9]/xsm) {
             $dirnum = substr($ARGV[$optind-1], 1);
@@ -45,6 +45,9 @@ while (my $c = getopt("f:o:cdDij0123456789")) {
         }
         when ('o') {
             $diroff = $optarg;
+        }
+        when ('r') {
+            $rawdata = 1;
         }
         default {
             usage();
@@ -156,11 +159,74 @@ sub ReadData {
     }
 }
 
+sub ShowRawBytes {
+    my ($pp, $n) = @_;
+
+    for (my $i = 0; $i < $n; $i++) {
+        printf(" %02x", ord(substr($pp, $i, 1)));
+        if ((($i+1) % 24) == 0) { print "\n " }
+    }
+    print "\n";
+}
+
+sub ShowRawWords {
+    my ($pp, $n) = @_;
+
+    for (my $i = 0; $i < $n; $i++) {
+        printf(" %04x", ord(substr($pp, $i, 1)));
+        if ((($i+1) % 15) == 0) { print "\n " }
+    }
+    print "\n";
+}
+
+sub ReadRawData {
+    my ($tif, $bitrev) = @_;
+
+    my $nstrips = $tif->NumberOfStrips();
+    my $what = $tif->IsTiled() ? "Tile" : "Strip";
+
+    my @stripbc = $tif->GetField(TIFFTAG_STRIPBYTECOUNTS);
+    if ($nstrips > 0) {
+
+        for my $s (0..$#stripbc) {
+            my $buf;
+            if ($buf = $tif->ReadRawStrip($s, $stripbc[$s])) {
+                if ($showdata) {
+                    if ($bitrev) {
+                        TIFFReverseBits($buf, $stripbc[$s]);
+                        printf("%s %lu: (bit reversed)\n ", $what, $s);
+                    }
+                    else {
+                        printf("%s %lu:\n ", $what, $s);
+                    }
+                    if ($showwords) {
+                        ShowRawWords($buf, $stripbc[$s]>>1);
+                    }
+                    else {
+                        ShowRawBytes($buf, $stripbc[$s]);
+                    }
+                }
+            }
+            else {
+                fprintf(*STDERR, "Error reading strip %lu\n", $s);
+                if ($stoponerr) { last }
+            }
+	}
+    }
+}
+
 sub tiffinfo {
     my ($tif, $order, $flags, $is_image) = @_;
     $tif->PrintDirectory(*STDOUT, $flags);
     if (not $readdata or not $is_image) { return }
     if ($rawdata) {
+        if ($order) {
+            my $o = $tif->GetFieldDefaulted(TIFFTAG_FILLORDER);
+            ReadRawData($tif, $o != $order);
+        }
+        else {
+            ReadRawData($tif, 0);
+        }
     }
     else {
         if ($order) { $tif->SetField(TIFFTAG_FILLORDER, $order) }
