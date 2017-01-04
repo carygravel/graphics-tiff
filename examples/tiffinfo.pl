@@ -116,6 +116,7 @@ sub ShowStrip {
         }
         print "\n";
     }
+    return;
 }
 
 sub ReadContigStripData {
@@ -137,6 +138,7 @@ sub ReadContigStripData {
             ShowStrip( $strip, $buf, $nrow, $scanline );
         }
     }
+    return;
 }
 
 sub ReadData {
@@ -160,6 +162,7 @@ sub ReadData {
             ReadSeparateStripData($tif);
         }
     }
+    return;
 }
 
 sub ShowRawBytes {
@@ -170,6 +173,7 @@ sub ShowRawBytes {
         if ( ( ( $i + 1 ) % 24 ) == 0 ) { print "\n " }
     }
     print "\n";
+    return;
 }
 
 sub ShowRawWords {
@@ -180,6 +184,7 @@ sub ShowRawWords {
         if ( ( ( $i + 1 ) % 15 ) == 0 ) { print "\n " }
     }
     print "\n";
+    return;
 }
 
 sub ReadRawData {
@@ -216,6 +221,7 @@ sub ReadRawData {
             }
         }
     }
+    return;
 }
 
 sub tiffinfo {
