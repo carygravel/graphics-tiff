@@ -2,31 +2,39 @@
 use warnings;
 use strict;
 use Graphics::TIFF;
+use feature 'switch';
+no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
 my ($optarg, $dirnum, $showdata, $rawdata, $readdata);
+my $flags = 0;
 my $optind = 0;
 my $order = 0;
 my $stoponerr = 1;
 
-while (my $c = getopt("f:dD0123456789")) {
-    if (ord($c) >= ord('0') and ord($c) <= ord('9')) {
-        $dirnum = substr($ARGV[$optind-1], 1);
-    }
-    elsif ($c eq 'd') {
-        $showdata++;
-        $readdata++;
-    }
-    elsif ($c eq 'D') {
-        $readdata++;
-    }
-    elsif ($c eq 'f') {
-        if ($optarg eq 'lsb2msb' ) {
-            $order = FILLORDER_LSB2MSB;
+while (my $c = getopt("f:cdD0123456789")) {
+    given ( $c ) {
+        when (/[0-9]/xsm) {
+            $dirnum = substr($ARGV[$optind-1], 1);
         }
-        elsif ($optarg eq 'msb2lsb' ) {
-            $order = FILLORDER_MSB2LSB;
+        when ('c') {
+            $flags |= TIFFPRINT_COLORMAP | TIFFPRINT_CURVES;
         }
-        else {
+        when ('d') {
+            $showdata++;
+            $readdata++;
+        }
+        when ('D') {
+            $readdata++;
+        }
+        when ('f') {
+            if ($optarg eq 'lsb2msb' ) {
+                $order = FILLORDER_LSB2MSB;
+            }
+            elsif ($optarg eq 'msb2lsb' ) {
+                $order = FILLORDER_MSB2LSB;
+            }
+        }
+        default {
             usage();
         }
     }
@@ -39,16 +47,16 @@ while ($optind < @ARGV) {
     if (defined $tif) {
         if (defined $dirnum) {
             if ($tif->SetDirectory($dirnum)) {
-                tiffinfo($tif, $order, 0, 1);
+                tiffinfo($tif, $order, $flags, 1);
             }
         }
         else {
             do {
-                tiffinfo($tif, $order, 0, 1);
+                tiffinfo($tif, $order, $flags, 1);
                 my $offset = $tif->GetField(TIFFTAG_EXIFIFD);
                 if (defined $offset) {
                     if ($tif->ReadEXIFDirectory($offset)) {
-                        tiffinfo($tif, $order, 0, 0);
+                        tiffinfo($tif, $order, $flags, 0);
                     }
                 }
             } while ($tif->ReadDirectory);
