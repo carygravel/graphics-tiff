@@ -1,23 +1,7 @@
 use warnings;
 use strict;
-use Graphics::TIFF qw(
-  TIFFTAG_IMAGEWIDTH
-  TIFFTAG_IMAGELENGTH
-  TIFFTAG_FILLORDER
-  FILLORDER_MSB2LSB
-  FILLORDER_LSB2MSB
-  TIFFTAG_ROWSPERSTRIP
-  TIFFTAG_STRIPBYTECOUNTS
-  TIFFTAG_PLANARCONFIG
-  PLANARCONFIG_CONTIG
-  TIFFTAG_EXIFIFD
-  TIFFPRINT_CURVES
-  TIFFPRINT_COLORMAP
-  TIFFPRINT_JPEGQTABLES
-  TIFFPRINT_JPEGACTABLES
-  TIFFPRINT_JPEGDCTABLES
-);
-use Test::More tests => 24;
+use Graphics::TIFF ':all';
+use Test::More tests => 27;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -28,9 +12,9 @@ my $version = Graphics::TIFF->get_version_scalar;
 isnt $version, undef, 'version';
 
 SKIP: {
-    skip 'libtiff 4.0.3 or better required', 20 unless $version >= 4.000003;
+    skip 'libtiff 4.0.3 or better required', 24 unless $version >= 4.000003;
 
-    system("convert rose: test.tif");
+    system("convert -density 72 rose: test.tif");
 
     my $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
     isa_ok $tif, 'Graphics::TIFF';
@@ -44,9 +28,14 @@ SKIP: {
 
     is( $tif->SetSubDirectory(0), 0, 'SetSubDirectory' );
 
-    is( $tif->GetField(TIFFTAG_FILLORDER), FILLORDER_MSB2LSB, 'GetField' );
-    my @counts = $tif->GetField(TIFFTAG_STRIPBYTECOUNTS);
-    is_deeply( \@counts, [ 8190, 1470 ], 'GetField array of int' );
+    is( $tif->GetField(TIFFTAG_FILLORDER),
+        FILLORDER_MSB2LSB, 'GetField uint16' );
+    is( $tif->GetField(TIFFTAG_XRESOLUTION), 72, 'GetField float' );
+    my @counts = $tif->GetField(TIFFTAG_PAGENUMBER);
+    is_deeply( \@counts, [ 0, 1 ], 'GetField 2 uint16' );
+    @counts = $tif->GetField(TIFFTAG_STRIPBYTECOUNTS);
+    is_deeply( \@counts, [ 8190, 1470 ], 'GetField array of uint64' );
+    is( $tif->GetField(TIFFTAG_IMAGEWIDTH), 70, 'GetField uint32' );
 
     is( $tif->SetField( TIFFTAG_FILLORDER, FILLORDER_LSB2MSB ),
         1, 'SetField status' );
@@ -78,7 +67,7 @@ SKIP: {
     open my $fh, '>', $filename;
     $tif->PrintDirectory( $fh, 0 );
     close $fh;
-    is( -s $filename, 417, 'PrintDirectory' );
+    is( -s $filename, 449, 'PrintDirectory' );
     unlink $filename;
 
     $tif->Close;
