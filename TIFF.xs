@@ -85,31 +85,69 @@ tiff_GetField (tif, tag)
                 TIFF            *tif
                 uint32          tag
 	INIT:
-                uint32          v1, v2, v3, v4;
+                uint16          ui16, ui16_2;
+                uint32          ui32;
+                uint64          *aui;
+                float           f;
+                int             vector_length;
         PPCODE:
-                switch (items) {
-                        case 2: if (TIFFGetField (tif, tag, &v1)) {
-                                        XPUSHs(sv_2mortal(newSViv(v1)));
-                                }
-                                break;
-                        case 3: if (TIFFGetField (tif, tag, &v1, &v2)) {
-                                        XPUSHs(sv_2mortal(newSViv(v1)));
-                                        XPUSHs(sv_2mortal(newSViv(v2)));
-                                }
-                                break;
-                        case 4: if (TIFFGetField (tif, tag, &v1, &v2, &v3)) {
-                                        XPUSHs(sv_2mortal(newSViv(v1)));
-                                        XPUSHs(sv_2mortal(newSViv(v2)));
-                                        XPUSHs(sv_2mortal(newSViv(v3)));
-                                }
-                                break;
-                        case 5: if (TIFFGetField (tif, tag, &v1, &v2, &v3, &v4)) {
-                                        XPUSHs(sv_2mortal(newSViv(v1)));
-                                        XPUSHs(sv_2mortal(newSViv(v2)));
-                                        XPUSHs(sv_2mortal(newSViv(v3)));
-                                        XPUSHs(sv_2mortal(newSViv(v4)));
-                                }
-                                break;
+                switch (tag) {
+                    /* single uint16 */
+		    case TIFFTAG_BITSPERSAMPLE:
+		    case TIFFTAG_COMPRESSION:
+		    case TIFFTAG_PHOTOMETRIC:
+		    case TIFFTAG_THRESHHOLDING:
+		    case TIFFTAG_FILLORDER:
+		    case TIFFTAG_ORIENTATION:
+		    case TIFFTAG_SAMPLESPERPIXEL:
+		    case TIFFTAG_MINSAMPLEVALUE:
+		    case TIFFTAG_MAXSAMPLEVALUE:
+		    case TIFFTAG_PLANARCONFIG:
+		    case TIFFTAG_RESOLUTIONUNIT:
+		    case TIFFTAG_MATTEING:
+                        if (TIFFGetField (tif, tag, &ui16)) {
+                            XPUSHs(sv_2mortal(newSViv(ui16)));
+                        }
+                        break;
+
+                    /* single float */
+		    case TIFFTAG_XRESOLUTION:
+		    case TIFFTAG_YRESOLUTION:
+		    case TIFFTAG_XPOSITION:
+		    case TIFFTAG_YPOSITION:
+                        if (TIFFGetField (tif, tag, &f)) {
+                            XPUSHs(sv_2mortal(newSVnv(f)));
+                        }
+                        break;
+
+                    /* two uint16 */
+		    case TIFFTAG_PAGENUMBER:
+		    case TIFFTAG_HALFTONEHINTS:
+                        if (TIFFGetField (tif, tag, &ui16, &ui16_2)) {
+                            XPUSHs(sv_2mortal(newSViv(ui16)));
+                            XPUSHs(sv_2mortal(newSViv(ui16_2)));
+                        }
+                        break;
+
+                    /* array of uint64 */
+                    case TIFFTAG_TILEOFFSETS:
+                    case TIFFTAG_TILEBYTECOUNTS:
+                    case TIFFTAG_STRIPOFFSETS:
+                    case TIFFTAG_STRIPBYTECOUNTS:
+                        if (TIFFGetField (tif, tag, &aui)) {
+                            int nstrips = TIFFNumberOfStrips(tif);
+                            int i;
+			    for (i = 0; i < nstrips; ++i)
+                                XPUSHs(sv_2mortal(newSViv(aui[i])));
+                        }
+                        break;
+
+                    /* single uint32 */
+                    default:
+                        if (TIFFGetField (tif, tag, &ui32)) {
+                            XPUSHs(sv_2mortal(newSViv(ui32)));
+                        }
+                        break;
                 }
 
 void

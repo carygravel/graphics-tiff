@@ -1,6 +1,6 @@
 use warnings;
 use strict;
-use Test::More tests => 23;
+use Test::More tests => 24;
 
 BEGIN { use_ok('Graphics::TIFF') };
 
@@ -29,9 +29,12 @@ SKIP: {
     is($tif->SetSubDirectory(0), 0, 'SetSubDirectory');
 
     is($tif->GetField(TIFFTAG_FILLORDER), FILLORDER_MSB2LSB, 'GetField');
+    my @counts = $tif->GetField(TIFFTAG_STRIPBYTECOUNTS);
+    is_deeply(\@counts, [8190, 1470], 'GetField array of int');
 
     is($tif->SetField(TIFFTAG_FILLORDER, FILLORDER_LSB2MSB), 1, 'SetField status');
     is($tif->GetField(TIFFTAG_FILLORDER), FILLORDER_LSB2MSB, 'SetField result');
+    $tif->SetField(TIFFTAG_FILLORDER, FILLORDER_MSB2LSB); # reset
 
     is($tif->IsTiled, 0, 'IsTiled');
 
