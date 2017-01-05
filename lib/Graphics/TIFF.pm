@@ -60,7 +60,7 @@ sub get_version_scalar {
     return;
 }
 
-sub Open {
+sub Open {    ## no critic (Capitalization)
     my ( $class, $path, $flags ) = @_;
     my $self =
       Graphics::TIFF->_Open( $path, $flags );  ## no critic (ProtectPrivateSubs)

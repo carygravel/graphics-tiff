@@ -118,7 +118,7 @@ sub process_file {
     return;
 }
 
-sub ShowStrip {
+sub showstrip {
     my ( $strip, $pp, $nrow, $scanline ) = @_;
 
     printf "Strip %lu:\n", $strip;
@@ -136,7 +136,7 @@ sub ShowStrip {
     return;
 }
 
-sub ReadContigStripData {
+sub readcontigstripdata {
     my ($tif) = @_;
 
     my $scanline     = $tif->ScanlineSize;
@@ -153,13 +153,13 @@ sub ReadContigStripData {
             if ($stoponerr) { last }
         }
         elsif ($showdata) {
-            ShowStrip( $strip, $buf, $nrow, $scanline );
+            showstrip( $strip, $buf, $nrow, $scanline );
         }
     }
     return;
 }
 
-sub ReadData {
+sub readdata {
     my ($tif) = @_;
 
     my $config = $tif->GetField(TIFFTAG_PLANARCONFIG);
@@ -174,7 +174,7 @@ sub ReadData {
     }
     else {
         if ( $config == PLANARCONFIG_CONTIG ) {
-            ReadContigStripData($tif);
+            readcontigstripdata($tif);
         }
         else {
             ReadSeparateStripData($tif);
@@ -183,7 +183,7 @@ sub ReadData {
     return;
 }
 
-sub ShowRawBytes {
+sub showrawbytes {
     my ( $pp, $n ) = @_;
 
     for my $i ( 0 .. $n - 1 ) {
@@ -196,7 +196,7 @@ sub ShowRawBytes {
     return;
 }
 
-sub ShowRawWords {
+sub showrawwords {
     my ( $pp, $n ) = @_;
 
     for my $i ( 0 .. $n - 1 ) {
@@ -209,7 +209,7 @@ sub ShowRawWords {
     return;
 }
 
-sub ReadRawData {
+sub readrawdata {
     my ( $tif, $bitrev ) = @_;
 
     my $nstrips = $tif->NumberOfStrips();
@@ -230,10 +230,10 @@ sub ReadRawData {
                         printf "%s %lu:\n ", $what, $s;
                     }
                     if ($showwords) {
-                        ShowRawWords( $buf, $stripbc[$s] >> 1 );
+                        showrawwords( $buf, $stripbc[$s] >> 1 );
                     }
                     else {
-                        ShowRawBytes( $buf, $stripbc[$s] );
+                        showrawbytes( $buf, $stripbc[$s] );
                     }
                 }
             }
@@ -253,15 +253,15 @@ sub tiffinfo {
     if ($rawdata) {
         if ($order) {
             my $o = $tif->GetFieldDefaulted(TIFFTAG_FILLORDER);
-            ReadRawData( $tif, $o != $order );
+            readrawdata( $tif, $o != $order );
         }
         else {
-            ReadRawData( $tif, 0 );
+            readrawdata( $tif, 0 );
         }
     }
     else {
         if ($order) { $tif->SetField( TIFFTAG_FILLORDER, $order ) }
-        ReadData($tif);
+        readdata($tif);
     }
     return;
 }
