@@ -5,88 +5,93 @@ use Graphics::TIFF ':all';
 use feature 'switch';
 no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
-my ( $optarg, $dirnum, $showdata, $rawdata, $showwords, $readdata );
-my $flags     = 0;
+my ( $optarg, $showdata, $rawdata, $showwords, $readdata );
 my $optind    = 0;
-my $order     = 0;
 my $stoponerr = 1;
-my $diroff    = 0;
 
-while ( my $c = getopt("f:o:cdDijrs0123456789") ) {
-    given ($c) {
-        when (/[0-9]/xsm) {
-            $dirnum = substr( $ARGV[ $optind - 1 ], 1 );
-        }
-        when ('c') {
-            $flags |= TIFFPRINT_COLORMAP | TIFFPRINT_CURVES;
-        }
-        when ('d') {
-            $showdata++;
-            $readdata++;
-        }
-        when ('D') {
-            $readdata++;
-        }
-        when ('f') {
-            if ( $optarg eq 'lsb2msb' ) {
-                $order = FILLORDER_LSB2MSB;
-            }
-            elsif ( $optarg eq 'msb2lsb' ) {
-                $order = FILLORDER_MSB2LSB;
-            }
-        }
-        when ('i') {
-            $stoponerr = 0;
-        }
-        when ('j') {
-            $flags |=
-              TIFFPRINT_JPEGQTABLES | TIFFPRINT_JPEGACTABLES |
-              TIFFPRINT_JPEGDCTABLES;
-        }
-        when ('o') {
-            $diroff = $optarg;
-        }
-        when ('r') {
-            $rawdata = 1;
-        }
-        when ('s') {
-            $flags |= TIFFPRINT_STRIPS;
-        }
-        default {
-            usage();
-        }
-    }
-}
+sub main {
+    my $dirnum;
+    my $flags  = 0;
+    my $order  = 0;
+    my $diroff = 0;
 
-my $multiplefiles = @ARGV - $optind > 1;
-while ( $optind < @ARGV ) {
-    if ($multiplefiles) { print "$ARGV[$optind]\n" }
-    my $tif = Graphics::TIFF->Open( $ARGV[$optind], 'rc' );
-    if ( defined $tif ) {
-        if ( defined $dirnum ) {
-            if ( $tif->SetDirectory($dirnum) ) {
-                tiffinfo( $tif, $order, $flags, 1 );
+    while ( my $c = getopt("f:o:cdDijrs0123456789") ) {
+        given ($c) {
+            when (/[0-9]/xsm) {
+                $dirnum = substr( $ARGV[ $optind - 1 ], 1 );
             }
-        }
-        elsif ( $diroff != 0 ) {
-            if ( $tif->SetSubDirectory($diroff) ) {
-                tiffinfo( $tif, $order, $flags, 1 );
+            when ('c') {
+                $flags |= TIFFPRINT_COLORMAP | TIFFPRINT_CURVES;
             }
-        }
-        else {
-            do {
-                tiffinfo( $tif, $order, $flags, 1 );
-                my $offset = $tif->GetField(TIFFTAG_EXIFIFD);
-                if ( defined $offset ) {
-                    if ( $tif->ReadEXIFDirectory($offset) ) {
-                        tiffinfo( $tif, $order, $flags, 0 );
-                    }
+            when ('d') {
+                $showdata++;
+                $readdata++;
+            }
+            when ('D') {
+                $readdata++;
+            }
+            when ('f') {
+                if ( $optarg eq 'lsb2msb' ) {
+                    $order = FILLORDER_LSB2MSB;
                 }
-            } while ( $tif->ReadDirectory );
+                elsif ( $optarg eq 'msb2lsb' ) {
+                    $order = FILLORDER_MSB2LSB;
+                }
+            }
+            when ('i') {
+                $stoponerr = 0;
+            }
+            when ('j') {
+                $flags |=
+                  TIFFPRINT_JPEGQTABLES | TIFFPRINT_JPEGACTABLES |
+                  TIFFPRINT_JPEGDCTABLES;
+            }
+            when ('o') {
+                $diroff = $optarg;
+            }
+            when ('r') {
+                $rawdata = 1;
+            }
+            when ('s') {
+                $flags |= TIFFPRINT_STRIPS;
+            }
+            default {
+                usage();
+            }
         }
     }
-    $optind++;
-    $tif->Close;
+
+    my $multiplefiles = @ARGV - $optind > 1;
+    while ( $optind < @ARGV ) {
+        if ($multiplefiles) { print "$ARGV[$optind]\n" }
+        my $tif = Graphics::TIFF->Open( $ARGV[$optind], 'rc' );
+        if ( defined $tif ) {
+            if ( defined $dirnum ) {
+                if ( $tif->SetDirectory($dirnum) ) {
+                    tiffinfo( $tif, $order, $flags, 1 );
+                }
+            }
+            elsif ( $diroff != 0 ) {
+                if ( $tif->SetSubDirectory($diroff) ) {
+                    tiffinfo( $tif, $order, $flags, 1 );
+                }
+            }
+            else {
+                do {
+                    tiffinfo( $tif, $order, $flags, 1 );
+                    my $offset = $tif->GetField(TIFFTAG_EXIFIFD);
+                    if ( defined $offset ) {
+                        if ( $tif->ReadEXIFDirectory($offset) ) {
+                            tiffinfo( $tif, $order, $flags, 0 );
+                        }
+                    }
+                } while ( $tif->ReadDirectory );
+            }
+        }
+        $optind++;
+        $tif->Close;
+    }
+    return 0;
 }
 
 sub getopt {
@@ -246,3 +251,5 @@ sub tiffinfo {
     }
     return;
 }
+
+exit main();
