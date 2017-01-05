@@ -3,10 +3,8 @@ package Graphics::TIFF;
 use 5.008005;
 use strict;
 use warnings;
-
-require Exporter;
-
-our @ISA = qw(Exporter);
+use Exporter ();
+use base qw(Exporter);
 
 # This allows declaration	use Graphics::TIFF ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
