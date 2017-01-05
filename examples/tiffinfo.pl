@@ -18,7 +18,7 @@ sub main {
 
     while ( my $c = getopt('f:o:cdDijrs0123456789') ) {
         given ($c) {
-            when (/[0-9]/xsm) {
+            when (/\d/xsm) {
                 $dirnum = substr $ARGV[ $optind - 1 ], 1;
             }
             when ('c') {
