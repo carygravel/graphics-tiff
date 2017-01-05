@@ -1,23 +1,7 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Graphics::TIFF qw(
-  TIFFTAG_IMAGEWIDTH
-  TIFFTAG_IMAGELENGTH
-  TIFFTAG_FILLORDER
-  FILLORDER_MSB2LSB
-  FILLORDER_LSB2MSB
-  TIFFTAG_ROWSPERSTRIP
-  TIFFTAG_STRIPBYTECOUNTS
-  TIFFTAG_PLANARCONFIG
-  PLANARCONFIG_CONTIG
-  TIFFTAG_EXIFIFD
-  TIFFPRINT_CURVES
-  TIFFPRINT_COLORMAP
-  TIFFPRINT_JPEGQTABLES
-  TIFFPRINT_JPEGACTABLES
-  TIFFPRINT_JPEGDCTABLES
-);
+use Graphics::TIFF ':all';
 use feature 'switch';
 no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
@@ -28,7 +12,7 @@ my $order     = 0;
 my $stoponerr = 1;
 my $diroff    = 0;
 
-while ( my $c = getopt("f:o:cdDijr0123456789") ) {
+while ( my $c = getopt("f:o:cdDijrs0123456789") ) {
     given ($c) {
         when (/[0-9]/xsm) {
             $dirnum = substr( $ARGV[ $optind - 1 ], 1 );
@@ -64,6 +48,9 @@ while ( my $c = getopt("f:o:cdDijr0123456789") ) {
         }
         when ('r') {
             $rawdata = 1;
+        }
+        when ('s') {
+            $flags |= TIFFPRINT_STRIPS;
         }
         default {
             usage();
