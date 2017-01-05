@@ -19,7 +19,7 @@ sub main {
     while ( my $c = getopt('f:o:cdDijrs0123456789') ) {
         given ($c) {
             when (/[0-9]/xsm) {
-                $dirnum = substr( $ARGV[ $optind - 1 ], 1 );
+                $dirnum = substr $ARGV[ $optind - 1 ], 1;
             }
             when ('c') {
                 $flags |= TIFFPRINT_COLORMAP | TIFFPRINT_CURVES;
@@ -74,7 +74,7 @@ sub getopt {
     my ($options) = @_;
     my $c;
     if ( substr( $ARGV[$optind], 0, 1 ) eq qw{-} ) {
-        $c = substr( $ARGV[ $optind++ ], 1, 1 );
+        $c = substr $ARGV[ $optind++ ], 1, 1;
         if ( $options =~ /$c(:)?/xsm ) {
             if ( defined $1 ) { $optarg = $ARGV[ $optind++ ] }
         }
@@ -121,11 +121,11 @@ sub process_file {
 sub ShowStrip {
     my ( $strip, $pp, $nrow, $scanline ) = @_;
 
-    printf( "Strip %lu:\n", $strip );
+    printf "Strip %lu:\n", $strip;
     my $i = 0;
     while ( $nrow-- > 0 ) {
         for my $cc ( 0 .. $scanline - 1 ) {
-            printf ' %02x', ord( substr( $pp, $i++, 1 ) );
+            printf ' %02x', ord( substr $pp, $i++, 1 );
             if ( ( ( $cc + 1 ) % 24 ) == 0 ) ## no critic (ProhibitMagicNumbers)
             {
                 print "\n";
@@ -187,7 +187,7 @@ sub ShowRawBytes {
     my ( $pp, $n ) = @_;
 
     for my $i ( 0 .. $n - 1 ) {
-        printf ' %02x', ord( substr( $pp, $i, 1 ) );
+        printf ' %02x', ord( substr $pp, $i, 1 );
         if ( ( ( $i + 1 ) % 24 ) == 0 ) {    ## no critic (ProhibitMagicNumbers)
             print "\n ";
         }
@@ -200,7 +200,7 @@ sub ShowRawWords {
     my ( $pp, $n ) = @_;
 
     for my $i ( 0 .. $n - 1 ) {
-        printf ' %04x', ord( substr( $pp, $i, 1 ) );
+        printf ' %04x', ord( substr $pp, $i, 1 );
         if ( ( ( $i + 1 ) % 15 ) == 0 ) {    ## no critic (ProhibitMagicNumbers)
             print "\n ";
         }
@@ -224,10 +224,10 @@ sub ReadRawData {
                 if ($showdata) {
                     if ($bitrev) {
                         TIFFReverseBits( $buf, $stripbc[$s] );
-                        printf( "%s %lu: (bit reversed)\n ", $what, $s );
+                        printf "%s %lu: (bit reversed)\n ", $what, $s;
                     }
                     else {
-                        printf( "%s %lu:\n ", $what, $s );
+                        printf "%s %lu:\n ", $what, $s;
                     }
                     if ($showwords) {
                         ShowRawWords( $buf, $stripbc[$s] >> 1 );

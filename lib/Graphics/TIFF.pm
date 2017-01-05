@@ -64,7 +64,7 @@ sub Open {
     my ( $class, $path, $flags ) = @_;
     my $self =
       Graphics::TIFF->_Open( $path, $flags );  ## no critic (ProtectPrivateSubs)
-    bless( \$self, $class );
+    bless \$self, $class;
     return \$self;
 }
 
