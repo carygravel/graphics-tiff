@@ -124,7 +124,7 @@ sub ShowStrip {
     printf( "Strip %lu:\n", $strip );
     my $i = 0;
     while ( $nrow-- > 0 ) {
-        for ( my $cc = 0 ; $cc < $scanline ; $cc++ ) {
+        for my $cc ( 0 .. $scanline - 1 ) {
             printf( " %02x", ord( substr( $pp, $i++, 1 ) ) );
             if ( ( ( $cc + 1 ) % 24 ) == 0 ) {
                 print "\n";
@@ -141,7 +141,8 @@ sub ReadContigStripData {
     my $scanline     = $tif->ScanlineSize;
     my $h            = $tif->GetField(TIFFTAG_IMAGELENGTH);
     my $rowsperstrip = $tif->GetField(TIFFTAG_ROWSPERSTRIP);
-    for ( my $row = 0 ; $row < $h ; $row += $rowsperstrip ) {
+    for ( my $row = 0 ; $row < $h ; $row += $rowsperstrip )
+    {    ## no critic (ProhibitCStyleForLoops)
         my $nrow = ( $row + $rowsperstrip > $h ? $h - $row : $rowsperstrip );
         my $strip = $tif->ComputeStrip( $row, 0 );
         if (
@@ -184,7 +185,7 @@ sub ReadData {
 sub ShowRawBytes {
     my ( $pp, $n ) = @_;
 
-    for ( my $i = 0 ; $i < $n ; $i++ ) {
+    for my $i ( 0 .. $n - 1 ) {
         printf( " %02x", ord( substr( $pp, $i, 1 ) ) );
         if ( ( ( $i + 1 ) % 24 ) == 0 ) { print "\n " }
     }
@@ -195,7 +196,7 @@ sub ShowRawBytes {
 sub ShowRawWords {
     my ( $pp, $n ) = @_;
 
-    for ( my $i = 0 ; $i < $n ; $i++ ) {
+    for my $i ( 0 .. $n - 1 ) {
         printf( " %04x", ord( substr( $pp, $i, 1 ) ) );
         if ( ( ( $i + 1 ) % 15 ) == 0 ) { print "\n " }
     }
