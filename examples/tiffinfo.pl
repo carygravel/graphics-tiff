@@ -73,7 +73,7 @@ sub main {
 sub getopt {
     my ($options) = @_;
     my $c;
-    if ( substr( $ARGV[$optind], 0, 1 ) eq '-' ) {
+    if ( substr( $ARGV[$optind], 0, 1 ) eq qw{-} ) {
         $c = substr( $ARGV[ $optind++ ], 1, 1 );
         if ( $options =~ /$c(:)?/xsm ) {
             if ( defined $1 ) { $optarg = $ARGV[ $optind++ ] }
@@ -126,7 +126,8 @@ sub ShowStrip {
     while ( $nrow-- > 0 ) {
         for my $cc ( 0 .. $scanline - 1 ) {
             printf( " %02x", ord( substr( $pp, $i++, 1 ) ) );
-            if ( ( ( $cc + 1 ) % 24 ) == 0 ) {
+            if ( ( ( $cc + 1 ) % 24 ) == 0 ) ## no critic (ProhibitMagicNumbers)
+            {
                 print "\n";
             }
         }
@@ -187,7 +188,9 @@ sub ShowRawBytes {
 
     for my $i ( 0 .. $n - 1 ) {
         printf( " %02x", ord( substr( $pp, $i, 1 ) ) );
-        if ( ( ( $i + 1 ) % 24 ) == 0 ) { print "\n " }
+        if ( ( ( $i + 1 ) % 24 ) == 0 ) {    ## no critic (ProhibitMagicNumbers)
+            print "\n ";
+        }
     }
     print "\n";
     return;
@@ -198,7 +201,9 @@ sub ShowRawWords {
 
     for my $i ( 0 .. $n - 1 ) {
         printf( " %04x", ord( substr( $pp, $i, 1 ) ) );
-        if ( ( ( $i + 1 ) % 15 ) == 0 ) { print "\n " }
+        if ( ( ( $i + 1 ) % 15 ) == 0 ) {    ## no critic (ProhibitMagicNumbers)
+            print "\n ";
+        }
     }
     print "\n";
     return;
