@@ -16,7 +16,7 @@ sub main {
     my $flags = 0;
     my $order = 0;
 
-    while ( my $c = getopt('f:o:cdDijrs0123456789') ) {
+    while ( my $c = getopt('f:o:cdDijrsw0123456789') ) {
         given ($c) {
             when (/\d/xsm) {
                 $dirnum = substr $ARGV[ $optind - 1 ], 1;
@@ -55,6 +55,9 @@ sub main {
             }
             when ('s') {
                 $flags |= TIFFPRINT_STRIPS;
+            }
+            when ('w') {
+                $showwords = 1;
             }
             default {
                 usage();

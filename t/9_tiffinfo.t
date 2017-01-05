@@ -1,4 +1,4 @@
-use Test::More tests => 12;
+use Test::More tests => 13;
 use warnings;
 use strict;
 
@@ -40,6 +40,8 @@ is( `$cmd -j test.tif`, `tiffinfo -j test.tif`, '-j' );
 is( `$cmd -r -d test.tif`, `tiffinfo -r -d test.tif`, '-r -d' );
 
 is( `$cmd -s -d test.tif`, `tiffinfo -s -d test.tif`, '-s -d' );
+
+is( `$cmd -w -d test.tif`, `tiffinfo -w -d test.tif`, '-w -d' );
 
 #########################
 
