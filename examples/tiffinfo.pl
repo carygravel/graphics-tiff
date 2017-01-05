@@ -4,6 +4,8 @@ use strict;
 use Graphics::TIFF ':all';
 use feature 'switch';
 no if $] >= 5.018, warnings => 'experimental::smartmatch';
+use Readonly;
+Readonly my $EXIT_ERROR => -1;
 
 our $VERSION;
 
@@ -82,15 +84,39 @@ sub getopt {
     my $c;
     if ( substr( $ARGV[$optind], 0, 1 ) eq qw{-} ) {
         $c = substr $ARGV[ $optind++ ], 1, 1;
-        if ( $options =~ /$c(:)?/xsm ) {
+        my $regex = $c;
+        if ( $regex eq qw{?} ) { $regex = qw{\?} }
+        if ( $options =~ /$regex(:)?/xsm ) {
             if ( defined $1 ) { $optarg = $ARGV[ $optind++ ] }
         }
         else {
-            undef $c;
-            $optind = $#ARGV + 1;
+            warn "tiffinfo: invalid option -- $c\n";
+            usage();
         }
     }
     return $c;
+}
+
+sub usage {
+    warn Graphics::TIFF->GetVersion() . "\n\n";
+    warn <<'EOS';
+usage: tiffinfo [options] input...
+where options are:
+ -D		read data
+ -i		ignore read errors
+ -c		display data for grey/color response curve or colormap
+ -d		display raw/decoded image data
+ -f lsb2msb	force lsb-to-msb FillOrder for input
+ -f msb2lsb	force msb-to-lsb FillOrder for input
+ -j		show JPEG tables
+ -o offset	set initial directory offset
+ -r		read/display raw image data instead of decoded data
+ -s		display strip offsets and byte counts
+ -w		display raw data in words rather than bytes
+ -z		enable strip chopping
+ -#		set initial directory (first directory is # 0)
+EOS
+    exit $EXIT_ERROR;
 }
 
 sub process_file {
@@ -245,7 +271,7 @@ sub readrawdata {
                 }
             }
             else {
-                fprintf( *STDERR, "Error reading strip %lu\n", $s );
+                warn "Error reading strip $s\n";
                 if ($stoponerr) { last }
             }
         }
