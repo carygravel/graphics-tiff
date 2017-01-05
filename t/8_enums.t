@@ -1,4 +1,4 @@
-use Test::More tests => 19;
+use Test::More tests => 20;
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
@@ -26,6 +26,7 @@ is( TIFFTAG_PAGENUMBER, 297, "TIFFTAG_PAGENUMBER" );
 
 is( TIFFTAG_EXIFIFD, 34665, "TIFFTAG_EXIFIFD" );
 
+is( TIFFPRINT_STRIPS,       1,     "TIFFPRINT_STRIPS" );
 is( TIFFPRINT_CURVES,       2,     "TIFFPRINT_CURVES" );
 is( TIFFPRINT_COLORMAP,     4,     "TIFFPRINT_COLORMAP" );
 is( TIFFPRINT_JPEGQTABLES,  0x100, "TIFFPRINT_JPEGQTABLES" );
