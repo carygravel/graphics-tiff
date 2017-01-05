@@ -7,7 +7,8 @@ no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
 our $VERSION;
 
-my ( $optarg, $dirnum, $showdata, $rawdata, $showwords, $readdata );
+my ( $optarg, $dirnum, $showdata, $rawdata, $showwords, $readdata,
+    $chopstrips );
 my $optind    = 0;
 my $stoponerr = 1;
 my $diroff    = 0;
@@ -16,7 +17,7 @@ sub main {
     my $flags = 0;
     my $order = 0;
 
-    while ( my $c = getopt('f:o:cdDijrsw0123456789') ) {
+    while ( my $c = getopt('f:o:cdDijrswz0123456789') ) {
         given ($c) {
             when (/\d/xsm) {
                 $dirnum = substr $ARGV[ $optind - 1 ], 1;
@@ -59,6 +60,9 @@ sub main {
             when ('w') {
                 $showwords = 1;
             }
+            when ('z') {
+                $chopstrips = 1;
+            }
             default {
                 usage();
             }
@@ -91,7 +95,7 @@ sub getopt {
 
 sub process_file {
     my ( $file, $order, $flags ) = @_;
-    my $tif = Graphics::TIFF->Open( $file, 'rc' );
+    my $tif = Graphics::TIFF->Open( $file, $chopstrips ? 'rC' : 'rc' );
     if ( defined $tif ) {
         if ( defined $dirnum ) {
             if ( $tif->SetDirectory($dirnum) ) {
