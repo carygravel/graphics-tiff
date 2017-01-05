@@ -16,7 +16,7 @@ sub main {
     my $flags = 0;
     my $order = 0;
 
-    while ( my $c = getopt("f:o:cdDijrs0123456789") ) {
+    while ( my $c = getopt('f:o:cdDijrs0123456789') ) {
         given ($c) {
             when (/[0-9]/xsm) {
                 $dirnum = substr( $ARGV[ $optind - 1 ], 1 );
@@ -125,7 +125,7 @@ sub ShowStrip {
     my $i = 0;
     while ( $nrow-- > 0 ) {
         for my $cc ( 0 .. $scanline - 1 ) {
-            printf( " %02x", ord( substr( $pp, $i++, 1 ) ) );
+            printf ' %02x', ord( substr( $pp, $i++, 1 ) );
             if ( ( ( $cc + 1 ) % 24 ) == 0 ) ## no critic (ProhibitMagicNumbers)
             {
                 print "\n";
@@ -187,7 +187,7 @@ sub ShowRawBytes {
     my ( $pp, $n ) = @_;
 
     for my $i ( 0 .. $n - 1 ) {
-        printf( " %02x", ord( substr( $pp, $i, 1 ) ) );
+        printf ' %02x', ord( substr( $pp, $i, 1 ) );
         if ( ( ( $i + 1 ) % 24 ) == 0 ) {    ## no critic (ProhibitMagicNumbers)
             print "\n ";
         }
@@ -200,7 +200,7 @@ sub ShowRawWords {
     my ( $pp, $n ) = @_;
 
     for my $i ( 0 .. $n - 1 ) {
-        printf( " %04x", ord( substr( $pp, $i, 1 ) ) );
+        printf ' %04x', ord( substr( $pp, $i, 1 ) );
         if ( ( ( $i + 1 ) % 15 ) == 0 ) {    ## no critic (ProhibitMagicNumbers)
             print "\n ";
         }
@@ -213,7 +213,7 @@ sub ReadRawData {
     my ( $tif, $bitrev ) = @_;
 
     my $nstrips = $tif->NumberOfStrips();
-    my $what = $tif->IsTiled() ? "Tile" : "Strip";
+    my $what = $tif->IsTiled() ? 'Tile' : 'Strip';
 
     my @stripbc = $tif->GetField(TIFFTAG_STRIPBYTECOUNTS);
     if ( $nstrips > 0 ) {
