@@ -45,7 +45,10 @@ is( `$cmd -w -d test.tif`, `tiffinfo -w -d test.tif`, '-w -d' );
 
 is( `$cmd -z -d test.tif`, `tiffinfo -z -d test.tif`, '-z -d' );
 
-is( `$cmd -? test.tif 2>&1`, `tiffinfo -? test.tif 2>&1`, '-?' );
+# strip '' from around ?, which newer glibc libraries seem to have added
+my $expected = `tiffinfo -? test.tif 2>&1`;
+$expected =~ s/'\?'/?/xsm;
+is( `$cmd -? test.tif 2>&1`, $expected, '-?' );
 
 #########################
 
