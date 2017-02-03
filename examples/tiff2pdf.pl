@@ -26,6 +26,14 @@ my $TIFF2PDF_MODULE = "tiff2pdf";
 sub main {
     my ( %t2p, $outfilename, $input );
 
+    $t2p{pdf_majorversion}      = 1;
+    $t2p{pdf_minorversion}      = 1;
+    $t2p{pdf_defaultxres}       = 300.0;
+    $t2p{pdf_defaultyres}       = 300.0;
+    $t2p{pdf_defaultpagewidth}  = 612.0;
+    $t2p{pdf_defaultpagelength} = 792.0;
+    $t2p{pdf_xrefcount}         = 3;       # Catalog, Info, Pages
+
     while ( my $c = getopt('o:q:u:x:y:w:l:r:p:e:c:a:t:s:k:jzndifbhF') ) {
         given ($c) {
             when ('a') {
@@ -75,14 +83,7 @@ sub main {
                 $outfilename = $optarg;
             }
             when ('p') {
-                if (
-                    match_paper_size(
-                        $t2p{pdf_defaultpagewidth},
-                        $t2p{pdf_defaultpagelength},
-                        $optarg
-                    )
-                  )
-                {
+                if ( match_paper_size( \%t2p, $optarg ) ) {
                     $t2p{pdf_overridepagesize} = 1;
                 }
                 else {
@@ -238,6 +239,86 @@ options:
  -h: usage
 EOS
     exit $EXIT_FAILURE;
+}
+
+sub match_paper_size {
+    my ( $t2p, $papersize ) = @_;
+
+    my @sizes = qw(
+      LETTER A4 LEGAL
+      EXECUTIVE LETTER LEGAL LEDGER TABLOID
+      A B C D E F G H J K
+      A10 A9 A8 A7 A6 A5 A4 A3 A2 A1 A0
+      2A0 4A0 2A 4A
+      B10 B9 B8 B7 B6 B5 B4 B3 B2 B1 B0
+      JISB10 JISB9 JISB8 JISB7 JISB6 JISB5 JISB4
+      JISB3 JISB2 JISB1 JISB0
+      C10 C9 C8 C7 C6 C5 C4 C3 C2 C1 C0
+      RA2 RA1 RA0 SRA4 SRA3 SRA2 SRA1 SRA0
+      A3EXTRA A4EXTRA
+      STATEMENT FOLIO QUARTO );
+    my @widths = (
+        612,  595,  612,  522,  612,  612,  792,  792,  612,  792,
+        1224, 1584, 2448, 2016, 792,  2016, 2448, 2880, 74,   105,
+        147,  210,  298,  420,  595,  842,  1191, 1684, 2384, 3370,
+        4768, 3370, 4768, 88,   125,  176,  249,  354,  499,  709,
+        1001, 1417, 2004, 2835, 91,   128,  181,  258,  363,  516,
+        729,  1032, 1460, 2064, 2920, 79,   113,  162,  230,  323,
+        459,  649,  918,  1298, 1298, 2599, 1219, 1729, 2438, 638,
+        907,  1276, 1814, 2551, 914,  667,  396,  612,  609,
+    );
+    my @lengths = (
+        792,  842,  1008, 756,  792,  1008,  1224,  1224,  792,  1224,
+        1584, 2448, 3168, 2880, 6480, 10296, 12672, 10296, 105,  147,
+        210,  298,  420,  595,  842,  1191,  1684,  2384,  3370, 4768,
+        6741, 4768, 6741, 125,  176,  249,   354,   499,   709,  1001,
+        1417, 2004, 2835, 4008, 128,  181,   258,   363,   516,  729,
+        1032, 1460, 2064, 2920, 4127, 113,   162,   230,   323,  459,
+        649,  918,  1298, 1837, 1837, 3677,  1729,  2438,  3458, 907,
+        1276, 1814, 2551, 3628, 1262, 914,   612,   936,   780,
+    );
+
+    for my $i ( 0 .. @sizes ) {
+        if ( $papersize eq $sizes[$i] ) {
+            $t2p->{pdf_defaultpagewidth}  = $widths[$i];
+            $t2p->{pdf_defaultpagelength} = $lengths[$i];
+            return 1;
+        }
+    }
+    return;
+}
+
+# This function validates the values of a T2P context struct pointer
+# before calling t2p_write_pdf with it.
+
+sub t2p_validate {
+    my ($t2p) = @_;
+
+    if ( $t2p->{pdf_defaultcompression} == $T2P_COMPRESS_JPEG ) {
+        if (   $t2p->{pdf_defaultcompressionquality} > 100
+            || $t2p->{pdf_defaultcompressionquality} < 1 )
+        {
+            $t2p->{pdf_defaultcompressionquality} = 0;
+        }
+    }
+    elsif ( $t2p->{pdf_defaultcompression} == $T2P_COMPRESS_ZIP ) {
+        my $m = $t2p->{pdf_defaultcompressionquality} % 100;
+        if (   $t2p->{pdf_defaultcompressionquality} / 100 > 9
+            || ( $m > 1 && $m < 10 )
+            || $m > 15 )
+        {
+            $t2p->{pdf_defaultcompressionquality} = 0;
+        }
+        if ( $t2p->{pdf_defaultcompressionquality} % 100 != 0 ) {
+            $t2p->{pdf_defaultcompressionquality} /= 100;
+            $t2p->{pdf_defaultcompressionquality} *= 100;
+            warn
+"$TIFF2PDF_MODULE: PNG Group predictor differencing not implemented, assuming compression quality $t2p->{pdf_defaultcompressionquality}\n";
+        }
+        $t2p->{pdf_defaultcompressionquality} %= 100;
+        if ( $t2p->{pdf_minorversion} < 2 ) { $t2p->{pdf_minorversion} = 2; }
+    }
+    return;
 }
 
 exit main();
