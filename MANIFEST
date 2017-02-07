@@ -7,8 +7,8 @@ lib/Graphics/TIFF.pm
 t/1.t
 t/8_enums.t
 t/91_critic.t
+t/92_tiffinfo.t
 t/93_tiff2pdf.t
-t/9_tiffinfo.t
 t/perlcriticrc
 tiffperl.h
 typemap
