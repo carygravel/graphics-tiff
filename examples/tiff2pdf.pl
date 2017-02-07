@@ -16,6 +16,9 @@ Readonly my $PS_UNIT_SIZE => 72;
 Readonly my $EXIT_SUCCESS => 0;
 Readonly my $EXIT_FAILURE => 1;
 
+Readonly my $T2P_ERR_OK    => 0;
+Readonly my $T2P_ERR_ERROR => 1;
+
 our $VERSION;
 
 my ($optarg);
@@ -318,6 +321,157 @@ sub t2p_validate {
         $t2p->{pdf_defaultcompressionquality} %= 100;
         if ( $t2p->{pdf_minorversion} < 2 ) { $t2p->{pdf_minorversion} = 2; }
     }
+    return;
+}
+
+# This function scans the input TIFF file for pages.  It attempts
+# to determine which IFD's of the TIFF file contain image document
+# pages.  For each, it gathers some information that has to do
+# with the output of the PDF document as a whole.
+
+sub t2p_read_tiff_init {
+    my ( $t2p, $input ) = @_;
+
+    my $directorycount = $input->NumberOfDirectories();
+    for my $i ( 0 .. $directorycount - 1 ) {
+        my $subfiletype = 0;
+
+        if ( !$input->SetDirectory($i) ) {
+            my $msg =
+              sprintf
+              "%s: Can't allocate %lu bytes of memory for tiff_pages array, %s",
+              $TIFF2PDF_MODULE, $i, $input->FileName;
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return;
+        }
+        my ( $pagen, $paged ) = $input->GetField(TIFFTAG_PAGENUMBER);
+        if ( defined $pagen and defined $paged ) {
+            if ( ( $pagen > $paged ) && ( $paged != 0 ) ) {
+                $t2p->{tiff_pages}[ $t2p->{tiff_pagecount} ]{page_number} =
+                  $paged;
+            }
+            else {
+                $t2p->{tiff_pages}[ $t2p->{tiff_pagecount} ]{page_number} =
+                  $pagen;
+            }
+            goto ispage2;
+        }
+        if ( $subfiletype = $input->GetField(TIFFTAG_SUBFILETYPE) ) {
+            if (   ( ( $subfiletype & FILETYPE_PAGE ) != 0 )
+                || ( $subfiletype == 0 ) )
+            {
+                goto ispage;
+            }
+            else {
+                goto isnotpage;
+            }
+        }
+        if ( $subfiletype = $input->GetField(TIFFTAG_OSUBFILETYPE) ) {
+            if (   ( $subfiletype == OFILETYPE_IMAGE )
+                || ( $subfiletype == OFILETYPE_PAGE )
+                || ( $subfiletype == 0 ) )
+            {
+                goto ispage;
+            }
+            else {
+                goto isnotpage;
+            }
+        }
+      ispage:
+        $t2p->{tiff_pages}[ $t2p->{tiff_pagecount} ]{page_number} =
+          $t2p->{tiff_pagecount};
+      ispage2:
+        $t2p->{tiff_pages}[ $t2p->{tiff_pagecount} ]{page_directory} = $i;
+        if ( $input->IsTiled() ) {
+            $t2p->{tiff_pages}[ $t2p->{tiff_pagecount} ]{page_tilecount} =
+              $input->NumberOfTiles();
+        }
+        $t2p->{tiff_pagecount}++;
+      isnotpage:
+        0;
+    }
+
+    @{ $t2p->{tiff_pages} } =
+      sort { $a->{page_number} <=> $b->{page_number} } @{ $t2p->{tiff_pages} };
+
+    my $xuint16;
+    for my $i ( 0 .. $t2p->{tiff_pagecount} - 1 ) {
+        $t2p->{pdf_xrefcount} += 5;
+        $input->SetDirectory( $t2p->{tiff_pages}[$i]{page_directory} );
+        if (
+            (
+                $xuint16 =
+                $input->GetField(TIFFTAG_PHOTOMETRIC)
+                && ( $xuint16 == PHOTOMETRIC_PALETTE )
+            )
+            || ( $xuint16 = $input->GetField(TIFFTAG_INDEXED) )
+          )
+        {
+            $t2p->{tiff_pages}[$i]{page_extra}++;
+            $t2p->{pdf_xrefcount}++;
+        }
+        if ( $xuint16 = $input->GetField(TIFFTAG_COMPRESSION) ) {
+            if (
+                (
+                       $xuint16 == COMPRESSION_DEFLATE
+                    || $xuint16 == COMPRESSION_ADOBE_DEFLATE
+                )
+                && ( ( $t2p->{tiff_pages}[$i]{page_tilecount} != 0 )
+                    || $input->NumberOfStrips() == 1 )
+                && ( $t2p->{pdf_nopassthrough} == 0 )
+              )
+            {
+                if ( $t2p->{pdf_minorversion} < 2 ) {
+                    $t2p->{pdf_minorversion} = 2;
+                }
+            }
+        }
+        if ( @{ $t2p->{tiff_transferfunction} } =
+            $input->GetField(TIFFTAG_TRANSFERFUNCTION) )
+        {
+            if ( $t2p->{tiff_transferfunction}[1] !=
+                $t2p->{tiff_transferfunction}[0] )
+            {
+                $t2p->{tiff_transferfunctioncount} = 3;
+                $t2p->{tiff_pages}[$i]{page_extra} += 4;
+                $t2p->{pdf_xrefcount} += 4;
+            }
+            else {
+                $t2p->{tiff_transferfunctioncount} = 1;
+                $t2p->{tiff_pages}[$i]{page_extra} += 2;
+                $t2p->{pdf_xrefcount} += 2;
+            }
+            if ( $t2p->{pdf_minorversion} < 2 ) {
+                $t2p->{pdf_minorversion} = 2;
+            }
+        }
+        else {
+            $t2p->{tiff_transferfunctioncount} = 0;
+        }
+        if ( $t2p->{tiff_iccprofile} = $input->GetField(TIFFTAG_ICCPROFILE) ) {
+            $t2p->{tiff_pages}[$i]{page_extra}++;
+            $t2p->{pdf_xrefcount}++;
+            if ( $t2p->{pdf_minorversion} < 3 ) { $t2p->{pdf_minorversion} = 3 }
+        }
+        $t2p->{tiff_tiles}[$i]{tiles_tilecount} =
+          $t2p->{tiff_pages}[$i]{page_tilecount};
+        if (   ( $xuint16 = $input->GetField(TIFFTAG_PLANARCONFIG) != 0 )
+            && ( $xuint16 == PLANARCONFIG_SEPARATE ) )
+        {
+            $xuint16 = $input->GetField(TIFFTAG_SAMPLESPERPIXEL);
+            $t2p->{tiff_tiles}[$i]{tiles_tilecount} /= $xuint16;
+        }
+        if ( $t2p->{tiff_tiles}[$i]{tiles_tilecount} > 0 ) {
+            $t2p->{pdf_xrefcount} +=
+              ( $t2p->{tiff_tiles}[$i]{tiles_tilecount} - 1 ) * 2;
+            $t2p->{tiff_tiles}[$i]{tiles_tilewidth} =
+              $input->GetField(TIFFTAG_TILEWIDTH);
+            $t2p->{tiff_tiles}[$i]{tiles_tilelength} = $input =
+              GetField(TIFFTAG_TILELENGTH);
+        }
+    }
+
     return;
 }
 

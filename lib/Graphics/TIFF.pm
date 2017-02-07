@@ -13,6 +13,16 @@ Readonly my $MICRO => 1_000_000;
 our %EXPORT_TAGS = (
     'all' => [
         qw(
+          TIFFTAG_SUBFILETYPE
+          FILETYPE_REDUCEDIMAGE
+          FILETYPE_PAGE
+          FILETYPE_MASK
+
+          TIFFTAG_OSUBFILETYPE
+          OFILETYPE_IMAGE
+          OFILETYPE_REDUCEDIMAGE
+          OFILETYPE_PAGE
+
           TIFFTAG_IMAGEWIDTH
           TIFFTAG_IMAGELENGTH
 
@@ -74,8 +84,10 @@ our %EXPORT_TAGS = (
 
           TIFFTAG_XRESOLUTION
           TIFFTAG_YRESOLUTION
+
           TIFFTAG_PLANARCONFIG
           PLANARCONFIG_CONTIG
+          PLANARCONFIG_SEPARATE
 
           TIFFTAG_GROUP3OPTIONS
           TIFFTAG_T4OPTIONS
@@ -94,6 +106,8 @@ our %EXPORT_TAGS = (
 
           TIFFTAG_PAGENUMBER
 
+          TIFFTAG_TRANSFERFUNCTION
+
           TIFFTAG_PREDICTOR
           PREDICTOR_NONE
           PREDICTOR_HORIZONTAL
@@ -101,9 +115,16 @@ our %EXPORT_TAGS = (
 
           TIFFTAG_COLORMAP
 
+          TIFFTAG_TILEWIDTH
+          TIFFTAG_TILELENGTH
+
+          TIFFTAG_INDEXED
+
           TIFFTAG_OPIIMAGEID
 
           TIFFTAG_EXIFIFD
+
+          TIFFTAG_ICCPROFILE
 
           TIFFPRINT_STRIPS
           TIFFPRINT_CURVES
@@ -117,7 +138,7 @@ our %EXPORT_TAGS = (
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 require XSLoader;
 XSLoader::load( 'Graphics::TIFF', $VERSION );
@@ -155,7 +176,7 @@ Graphics::TIFF - Perl extension for the libtiff library
 
 =head1 VERSION
 
-0.01
+0.02
 
 =head1 SYNOPSIS
 
