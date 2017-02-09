@@ -6,12 +6,36 @@ use feature 'switch';
 no if $] >= 5.018, warnings => 'experimental::smartmatch';
 
 use Readonly;
+Readonly my $PS_UNIT_SIZE => 72;
+
+Readonly my $T2P_CS_BILEVEL  = 0x01;
+Readonly my $T2P_CS_GRAY     = 0x02;
+Readonly my $T2P_CS_RGB      = 0x04;
+Readonly my $T2P_CS_CMYK     = 0x08;
+Readonly my $T2P_CS_LAB      = 0x10;
+Readonly my $T2P_CS_PALETTE  = 0x1000;
+Readonly my $T2P_CS_CALGRAY  = 0x20;
+Readonly my $T2P_CS_CALRGB   = 0x40;
+Readonly my $T2P_CS_ICCBASED = 0x80;
+
 Readonly my $T2P_COMPRESS_NONE => 0x00;
 Readonly my $T2P_COMPRESS_G4   => 0x01;
 Readonly my $T2P_COMPRESS_JPEG => 0x02;
 Readonly my $T2P_COMPRESS_ZIP  => 0x04;
 
-Readonly my $PS_UNIT_SIZE => 72;
+Readonly my $T2P_TRANSCODE_RAW    = 0x01;
+Readonly my $T2P_TRANSCODE_ENCODE = 0x02;
+
+Readonly my $T2P_SAMPLE_NOTHING                   = 0x0000;
+Readonly my $T2P_SAMPLE_ABGR_TO_RGB               = 0x0001;
+Readonly my $T2P_SAMPLE_RGBA_TO_RGB               = 0x0002;
+Readonly my $T2P_SAMPLE_RGBAA_TO_RGB              = 0x0004;
+Readonly my $T2P_SAMPLE_YCBCR_TO_RGB              = 0x0008;
+Readonly my $T2P_SAMPLE_YCBCR_TO_LAB              = 0x0010;
+Readonly my $T2P_SAMPLE_REALIZE_PALETTE           = 0x0020;
+Readonly my $T2P_SAMPLE_SIGNED_TO_UNSIGNED        = 0x0040;
+Readonly my $T2P_SAMPLE_LAB_SIGNED_TO_UNSIGNED    = 0x0040;
+Readonly my $T2P_SAMPLE_PLANAR_SEPARATE_TO_CONTIG = 0x0100;
 
 Readonly my $EXIT_SUCCESS => 0;
 Readonly my $EXIT_FAILURE => 1;
@@ -472,6 +496,543 @@ sub t2p_read_tiff_init {
         }
     }
 
+    return;
+}
+
+# This function sets the input directory to the directory of a given
+# page and determines information about the image.  It checks
+# the image characteristics to determine if it is possible to convert
+# the image data into a page of PDF output, setting values of the T2P
+# struct for this page.  It determines what color space is used in
+# the output PDF to represent the image.
+
+# It determines if the image can be converted as raw data without
+# requiring transcoding of the image data.
+
+sub t2p_read_tiff_data {
+    my ( $t2p, $input ) = @_;
+
+    $t2p->{pdf_transcode}    = $T2P_TRANSCODE_ENCODE;
+    $t2p->{pdf_sample}       = $T2P_SAMPLE_NOTHING;
+    $t2p->{pdf_switchdecode} = $t2p->{pdf_colorspace_invert};
+
+    $input->SetDirectory(
+        $t2p->{tiff_pages}[ $t2p->{pdf_page} ]{page_directory} );
+
+    $t2p->{tiff_width} = $input->GetField(TIFFTAG_IMAGEWIDTH);
+    if ( $t2p->{tiff_width} == 0 ) {
+        my $msg = sprintf "$TIFF2PDF_MODULE: No support for %s with zero width",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return;
+    }
+
+    $t2p->{tiff_length} = $input->GetField(TIFFTAG_IMAGELENGTH);
+    if ( $t2p->{tiff_length} == 0 ) {
+        my $msg =
+          sprintf "$TIFF2PDF_MODULE: No support for %s with zero length",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return;
+    }
+
+    if ( $t2p->{tiff_compression} = $input->GetField(TIFFTAG_COMPRESSION) == 0 )
+    {
+        my $msg =
+          sprintf "$TIFF2PDF_MODULE: No support for %s with no compression tag",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return;
+    }
+    if ( TIFFIsCODECConfigured( $t2p->{tiff_compression} ) == 0 ) {
+        my $msg =
+          sprintf
+"$TIFF2PDF_MODULE: No support for %s with compression type %u:  not configured",
+          $input->FileName(), $t2p->{tiff_compression};
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return;
+    }
+
+    $t2p->{tiff_bitspersample} =
+      $input->GetFieldDefaulted(TIFFTAG_BITSPERSAMPLE);
+    given ( $t2p->{tiff_bitspersample} ) {
+        when (1) { }
+        when (2) { }
+        when (4) { }
+        when (8) { }
+        when (0) {
+            my $msg =
+              sprintf
+              "$TIFF2PDF_MODULE: Image %s has 0 bits per sample, assuming 1",
+              $input->FileName();
+            warn "$msg\n";
+            $t2p->{tiff_bitspersample} = 1;
+        }
+        default {
+            my $msg =
+              sprintf
+              "$TIFF2PDF_MODULE: No support for %s with %u bits per sample",
+              $input->FileName(), $t2p->{tiff_bitspersample};
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return;
+        }
+    }
+
+    $t2p->{tiff_samplesperpixel} =
+      $input->GetFieldDefaulted(TIFFTAG_SAMPLESPERPIXEL);
+    if ( $t2p->{tiff_samplesperpixel} > 4 ) {
+        my $msg =
+          sprintf
+          "$TIFF2PDF_MODULE: No support for %s with %u samples per pixel",
+          $input->FileName(), $t2p->{tiff_samplesperpixel};
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return;
+    }
+    if ( $t2p->{tiff_samplesperpixel} == 0 ) {
+        my $msg =
+          sprintf
+          "$TIFF2PDF_MODULE: Image %s has 0 samples per pixel, assuming 1",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{tiff_samplesperpixel} = 1;
+    }
+
+    my $xuint16 = $input->GetField(TIFFTAG_SAMPLEFORMAT);
+    if ( $xuint16 != 0 and $xuint16 != 1 and $xuint16 != 4 ) {
+        my $msg =
+          sprintf "$TIFF2PDF_MODULE: No support for %s with sample format %u",
+          $input->FileName(), $xuint16;
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return;
+    }
+
+    $t2p->{tiff_fillorder} = $input->GetFieldDefaulted(TIFFTAG_FILLORDER);
+
+    if ( $t2p->{tiff_photometric} =
+        $input->TIFFGetField(TIFFTAG_PHOTOMETRIC) == 0 )
+    {
+        my $msg =
+          sprintf
+"$TIFF2PDF_MODULE: No support for %s with no photometric interpretation tag",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return;
+    }
+
+    given ( $t2p->{tiff_photometric} ) {
+        when ( PHOTOMETRIC_MINISWHITE | PHOTOMETRIC_MINISBLACK ) {
+            if ( $t2p->{tiff_bitspersample} == 1 ) {
+                $t2p->{pdf_colorspace} = $T2P_CS_BILEVEL;
+                if ( $t2p->{tiff_photometric} == PHOTOMETRIC_MINISWHITE ) {
+                    $t2p->{pdf_switchdecode} ^= 1;
+                }
+            }
+            else {
+                $t2p->{pdf_colorspace} = $T2P_CS_GRAY;
+                if ( $t2p->{tiff_photometric} == PHOTOMETRIC_MINISWHITE ) {
+                    $t2p->{pdf_switchdecode} ^= 1;
+                }
+            }
+        }
+        when (PHOTOMETRIC_RGB) {
+            $t2p->{pdf_colorspace} = $T2P_CS_RGB;
+            if ( $t2p->{tiff_samplesperpixel} == 3 ) {
+                break;
+            }
+            if ( $xuint16 = $input->GetField(TIFFTAG_INDEXED) ) {
+                if ( $xuint16 == 1 ) { goto photometric_palette }
+            }
+            if ( $t2p->{tiff_samplesperpixel} > 3 ) {
+                if ( $t2p->{tiff_samplesperpixel} == 4 ) {
+                    $t2p->{pdf_colorspace} = $T2P_CS_RGB;
+                    my @extra = $input->TIFFGetField(TIFFTAG_EXTRASAMPLES);
+                    if ( @extra and $extra[0] == 1 ) {
+                        if ( $extra[1] == EXTRASAMPLE_ASSOCALPHA ) {
+                            $t2p->{pdf_sample} = $T2P_SAMPLE_RGBAA_TO_RGB;
+                            break;
+                        }
+                        if ( $extra[1] == EXTRASAMPLE_UNASSALPHA ) {
+                            $t2p->{pdf_sample} = $T2P_SAMPLE_RGBA_TO_RGB;
+                            break;
+                        }
+                        my $msg =
+                          sprintf
+"$TIFF2PDF_MODULE: RGB image %s has 4 samples per pixel, assuming RGBA",
+                          $input->FileName();
+                        warn "$msg\n";
+                        break;
+                    }
+                    $t2p->{pdf_colorspace} = $T2P_CS_CMYK;
+                    $t2p->{pdf_switchdecode} ^= 1;
+                    my $msg =
+                      sprintf
+"$TIFF2PDF_MODULE: RGB image %s has 4 samples per pixel, assuming inverse CMYK",
+                      $input->FileName();
+                    warn "$msg\n";
+                    break;
+                }
+                else {
+                    my $msg =
+                      sprintf
+"$TIFF2PDF_MODULE: No support for RGB image %s with %u samples per pixel",
+                      $input->FileName(), $t2p->{tiff_samplesperpixel};
+                    warn "$msg\n";
+                    $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                    break;
+                }
+            }
+            else {
+                my $msg =
+                  sprintf
+"$TIFF2PDF_MODULE: No support for RGB image %s with %u samples per pixel",
+                  $input->FileName(), $t2p->{tiff_samplesperpixel};
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                break;
+            }
+        }
+        when (PHOTOMETRIC_PALETTE) {
+          photometric_palette:
+            if ( $t2p->{tiff_samplesperpixel} != 1 ) {
+                my $msg =
+                  sprintf
+"$TIFF2PDF_MODULE: No support for palettized image %s with not one sample per pixel",
+                  $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return;
+            }
+            $t2p->{pdf_colorspace}  = $T2P_CS_RGB | $T2P_CS_PALETTE;
+            $t2p->{pdf_palettesize} = 0x0001 << $t2p->{tiff_bitspersample};
+            my @rgb = $input->GetField(TIFFTAG_COLORMAP);
+            if ( !@rgb ) {
+                my $msg =
+                  sprintf
+                  "$TIFF2PDF_MODULE: Palettized image %s has no color map",
+                  $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return;
+            }
+            for my $i ( 0 .. $t2p->{pdf_palettesize} - 1 ) {
+                $t2p->{pdf_palette}[ $i * 3 ]     = $rgb[0][$i] >> 8;
+                $t2p->{pdf_palette}[ $i * 3 + 1 ] = $rgb[1][$i] >> 8;
+                $t2p->{pdf_palette}[ $i * 3 + 2 ] = $rgb[2][$i] >> 8;
+            }
+            $t2p->{pdf_palettesize} *= 3;
+            break;
+        }
+        when (PHOTOMETRIC_SEPARATED) {
+            if ( $xuint16 = $input->GetField(TIFFTAG_INDEXED) ) {
+                if ( $xuint16 == 1 ) { goto photometric_palette_cmyk }
+            }
+            if ( $xuint16 = $input->TIFFGetField(TIFFTAG_INKSET) ) {
+                if ( $xuint16 != INKSET_CMYK ) {
+                    my $msg =
+                      sprintf
+"$TIFF2PDF_MODULE: No support for %s because its inkset is not CMYK",
+                      $input->FileName();
+                    warn "$msg\n";
+                    $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                    return;
+                }
+            }
+            if ( $t2p->{tiff_samplesperpixel} == 4 ) {
+                $t2p->{pdf_colorspace} = $T2P_CS_CMYK;
+            }
+            else {
+                my $msg =
+                  sprintf
+"$TIFF2PDF_MODULE: No support for %s because it has %u samples per pixel",
+                  $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return;
+            }
+            break;
+          photometric_palette_cmyk:
+            if ( $t2p->{tiff_samplesperpixel} != 1 ) {
+                my $msg =
+                  sprintf
+"$TIFF2PDF_MODULE: No support for palettized CMYK image %s with not one sample per pixel",
+                  $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return;
+            }
+            $t2p->{pdf_colorspace}  = $T2P_CS_CMYK | $T2P_CS_PALETTE;
+            $t2p->{pdf_palettesize} = 0x0001 << $t2p->{tiff_bitspersample};
+            my @rgba = $input->TIFFGetField( TIFFTAG_COLORMAP, &r, &g, &b, &a );
+            if ( !@rgba ) {
+                my $msg =
+                  sprintf
+                  "$TIFF2PDF_MODULE: Palettized image %s has no color map",
+                  $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return;
+            }
+            for my $i ( 0 .. $t2p->{pdf_palettesize} - 1 ) {
+                $t2p->{pdf_palette}[ $i * 4 ]     = $rgba[0][$i] >> 8;
+                $t2p->{pdf_palette}[ $i * 4 + 1 ] = $rgba[1][$i] >> 8;
+                $t2p->{pdf_palette}[ $i * 4 + 2 ] = $rgba[2][$i] >> 8;
+                $t2p->{pdf_palette}[ $i * 4 + 3 ] = $rgba[3][$i] >> 8;
+            }
+            $t2p->{pdf_palettesize} *= 4;
+        }
+        when (PHOTOMETRIC_YCBCR) {
+            $t2p->{pdf_colorspace} = $T2P_CS_RGB;
+            if ( $t2p->{tiff_samplesperpixel} == 1 ) {
+                $t2p->{pdf_colorspace}   = $T2P_CS_GRAY;
+                $t2p->{tiff_photometric} = PHOTOMETRIC_MINISBLACK;
+                break;
+            }
+            $t2p->{pdf_sample} = $T2P_SAMPLE_YCBCR_TO_RGB;
+            if ( $t2p->{pdf_defaultcompression} == $T2P_COMPRESS_JPEG ) {
+                $t2p->{pdf_sample} = $T2P_SAMPLE_NOTHING;
+            }
+        }
+        when (PHOTOMETRIC_CIELAB) {
+            $t2p->{pdf_labrange}[0] = -127;
+            $t2p->{pdf_labrange}[1] = 127;
+            $t2p->{pdf_labrange}[2] = -127;
+            $t2p->{pdf_labrange}[3] = 127;
+            $t2p->{pdf_sample}      = $T2P_SAMPLE_LAB_SIGNED_TO_UNSIGNED;
+            $t2p->{pdf_colorspace}  = $T2P_CS_LAB;
+        }
+        when (PHOTOMETRIC_ICCLAB) {
+            $t2p->{pdf_labrange}[0] = 0;
+            $t2p->{pdf_labrange}[1] = 255;
+            $t2p->{pdf_labrange}[2] = 0;
+            $t2p->{pdf_labrange}[3] = 255;
+            $t2p->{pdf_colorspace}  = $T2P_CS_LAB;
+        }
+        when (PHOTOMETRIC_ITULAB) {
+            $t2p->{pdf_labrange}[0] = -85;
+            $t2p->{pdf_labrange}[1] = 85;
+            $t2p->{pdf_labrange}[2] = -75;
+            $t2p->{pdf_labrange}[3] = 124;
+            $t2p->{pdf_sample}      = $T2P_SAMPLE_LAB_SIGNED_TO_UNSIGNED;
+            $t2p->{pdf_colorspace}  = $T2P_CS_LAB;
+        }
+        when (PHOTOMETRIC_LOGL) { }
+        when (PHOTOMETRIC_LOGLUV) {
+            my $msg =
+              sprintf
+"$TIFF2PDF_MODULE: No support for %s with photometric interpretation LogL/LogLuv",
+              $input->FileName();
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return;
+        }
+        default {
+            my $msg =
+              sprintf
+"$TIFF2PDF_MODULE: No support for %s with photometric interpretation %u",
+              $input->FileName();
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return;
+        }
+    }
+    if ( $t2p->{tiff_planar} = $input->GetField(TIFFTAG_PLANARCONFIG) ) {
+        given ( $t2p->{tiff_planar} ) {
+            when (0) {
+                my $msg =
+                  sprintf
+"$TIFF2PDF_MODULE: Image %s has planar configuration 0, assuming 1",
+                  $input->FileName();
+                warn "$msg\n";
+                $t2p->{tiff_planar} = PLANARCONFIG_CONTIG;
+            }
+            when (PLANARCONFIG_CONTIG) { }
+            when (PLANARCONFIG_SEPARATE) {
+                $t2p->{pdf_sample} = $T2P_SAMPLE_PLANAR_SEPARATE_TO_CONTIG;
+                if ( $t2p->{tiff_bitspersample} != 8 ) {
+                    my $msg =
+                      sprintf
+"$TIFF2PDF_MODULE: No support for %s with separated planar configuration and %u bits per sample",
+                      $input->FileName(), $t2p->{tiff_bitspersample};
+                    warn "$msg\n";
+                    $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                    return;
+                }
+            }
+            default {
+                my $msg =
+                  sprintf
+"$TIFF2PDF_MODULE: No support for %s with planar configuration %u",
+                  $input->FileName(), $t2p->{tiff_planar};
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return;
+            }
+        }
+    }
+
+    $t2p->{tiff_orientation} = $input->GetFieldDefaulted(TIFFTAG_ORIENTATION);
+    if ( $t2p->{tiff_orientation} > 8 ) {
+        my $msg =
+          sprintf "$TIFF2PDF_MODULE: Image %s has orientation %u, assuming 0",
+          $input->FileName(), $t2p->{tiff_orientation};
+        warn "$msg\n";
+        $t2p->{tiff_orientation} = 0;
+    }
+
+    if ( $t2p->{tiff_xres} = $input->GetField(TIFFTAG_XRESOLUTION) == 0 ) {
+        $t2p->{tiff_xres} = 0.0;
+    }
+    if ( $t2p->{tiff_yres} = $input->GetField(TIFFTAG_YRESOLUTION) == 0 ) {
+        $t2p->{tiff_yres} = 0.0;
+    }
+    $t2p->{tiff_resunit} = $input->GetFieldDefaulted(TIFFTAG_RESOLUTIONUNIT);
+    if ( $t2p->{tiff_resunit} == RESUNIT_CENTIMETER ) {
+        $t2p->{tiff_xres} *= 2.54;
+        $t2p->{tiff_yres} *= 2.54;
+    }
+    elsif ($t2p->{tiff_resunit} != RESUNIT_INCH
+        && $t2p->{pdf_centimeters} != 0 )
+    {
+        $t2p->{tiff_xres} *= 2.54;
+        $t2p->{tiff_yres} *= 2.54;
+    }
+
+    t2p_compose_pdf_page($t2p);
+
+    $t2p->{pdf_transcode} = $T2P_TRANSCODE_ENCODE;
+    if ( $t2p->{pdf_nopassthrough} == 0 ) {
+        if ( $t2p->{tiff_compression} == COMPRESSION_CCITTFAX4 ) {
+            if ( $input->IsTiled() || ( $input->NumberOfStrips() == 1 ) ) {
+                $t2p->{pdf_transcode}   = $T2P_TRANSCODE_RAW;
+                $t2p->{pdf_compression} = $T2P_COMPRESS_G4;
+            }
+        }
+        if (   $t2p->{tiff_compression} == COMPRESSION_ADOBE_DEFLATE
+            || $t2p->{tiff_compression} == COMPRESSION_DEFLATE )
+        {
+            if ( $input->IsTiled() || ( $input->NumberOfStrips() == 1 ) ) {
+                $t2p->{pdf_transcode}   = $T2P_TRANSCODE_RAW;
+                $t2p->{pdf_compression} = $T2P_COMPRESS_ZIP;
+            }
+        }
+        if ( $t2p->{tiff_compression} == COMPRESSION_OJPEG ) {
+            $t2p->{pdf_transcode}   = $T2P_TRANSCODE_RAW;
+            $t2p->{pdf_compression} = $T2P_COMPRESS_JPEG;
+            t2p_process_ojpeg_tables( $t2p, $input );
+        }
+        if ( $t2p->{tiff_compression} == COMPRESSION_JPEG ) {
+            $t2p->{pdf_transcode}   = $T2P_TRANSCODE_RAW;
+            $t2p->{pdf_compression} = $T2P_COMPRESS_JPEG;
+        }
+    }
+
+    if ( $t2p->{pdf_transcode} != $T2P_TRANSCODE_RAW ) {
+        $t2p->{pdf_compression} = $t2p->{pdf_defaultcompression};
+    }
+
+    if ( $t2p->{pdf_defaultcompression} == $T2P_COMPRESS_JPEG ) {
+        if ( $t2p->{pdf_colorspace} & $T2P_CS_PALETTE ) {
+            $t2p->{pdf_sample} |= $T2P_SAMPLE_REALIZE_PALETTE;
+            $t2p->{pdf_colorspace} ^= $T2P_CS_PALETTE;
+            $t2p->{tiff_pages}[ $t2p->{pdf_page} ]{page_extra}--;
+        }
+    }
+    if ( $t2p->{tiff_compression} == COMPRESSION_JPEG ) {
+        if ( $t2p->{tiff_planar} == PLANARCONFIG_SEPARATE ) {
+            my $msg =
+              sprintf
+"$TIFF2PDF_MODULE: No support for %s with JPEG compression and separated planar configuration",
+              $input->FileName();
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return;
+        }
+    }
+    if ( $t2p->{tiff_compression} == COMPRESSION_OJPEG ) {
+        if ( $t2p->{tiff_planar} == PLANARCONFIG_SEPARATE ) {
+            my $msg =
+              sprintf
+"$TIFF2PDF_MODULE: No support for %s with OJPEG compression and separated planar configuration",
+              $input->FileName();
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return;
+        }
+    }
+
+    if ( $t2p->{pdf_sample} & $T2P_SAMPLE_REALIZE_PALETTE ) {
+        if ( $t2p->{pdf_colorspace} & $T2P_CS_CMYK ) {
+            $t2p->{tiff_samplesperpixel} = 4;
+            $t2p->{tiff_photometric}     = PHOTOMETRIC_SEPARATED;
+        }
+        else {
+            $t2p->{tiff_samplesperpixel} = 3;
+            $t2p->{tiff_photometric}     = PHOTOMETRIC_RGB;
+        }
+    }
+
+    if ( $t2p->{tiff_transferfunction} =
+        $input->GetField(TIFFTAG_TRANSFERFUNCTION) )
+    {
+        if ( $t2p->{tiff_transferfunction}[1] !=
+            $t2p->{tiff_transferfunction}[0] )
+        {
+            $t2p->{tiff_transferfunctioncount} = 3;
+        }
+        else {
+            $t2p->{tiff_transferfunctioncount} = 1;
+        }
+    }
+    else {
+        $t2p->{tiff_transferfunctioncount} = 0;
+    }
+    my @xfloat = $input->GetField(TIFFTAG_WHITEPOINT);
+    if (@xfloat) {
+        $t2p->{tiff_whitechromaticities} = @xfloat;
+        if ( $t2p->{pdf_colorspace} & $T2P_CS_GRAY ) {
+            $t2p->{pdf_colorspace} |= $T2P_CS_CALGRAY;
+        }
+        if ( $t2p->{pdf_colorspace} & $T2P_CS_RGB ) {
+            $t2p->{pdf_colorspace} |= $T2P_CS_CALRGB;
+        }
+    }
+    if ( @xfloat = $input->GetField(TIFFTAG_PRIMARYCHROMATICITIES) ) {
+        $t2p->{tiff_primarychromaticities} = @xfloat;
+        if ( $t2p->{pdf_colorspace} & $T2P_CS_RGB ) {
+            $t2p->{pdf_colorspace} |= $T2P_CS_CALRGB;
+        }
+    }
+    if ( $t2p->{pdf_colorspace} & $T2P_CS_LAB ) {
+        if ( @xfloat = $input->GetField( TIFFTAG_WHITEPOINT, &xfloatp ) ) {
+            $t2p->{tiff_whitechromaticities} = @xfloat;
+        }
+        else {
+            $t2p->{tiff_whitechromaticities}[0] = 0.3457;
+            $t2p->{tiff_whitechromaticities}[1] = 0.3585;
+        }
+    }
+    if ( ( $t2p->{tiff_iccprofilelength}, $t2p->{tiff_iccprofile} ) =
+        $input->TIFFGetField(TIFFTAG_ICCPROFILE) )
+    {
+        $t2p->{pdf_colorspace} |= $T2P_CS_ICCBASED;
+    }
+    else {
+        $t2p->{tiff_iccprofilelength} = 0;
+        $t2p->{tiff_iccprofile}       = undef;
+    }
+
+    if ( $t2p->{tiff_bitspersample} == 1 && $t2p->{tiff_samplesperpixel} == 1 )
+    {
+        $t2p->{pdf_compression} = $T2P_COMPRESS_G4;
+    }
     return;
 }
 
