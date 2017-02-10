@@ -1050,4 +1050,23 @@ sub t2p_tile_is_right_edge {
     return 0;
 }
 
+# Returns a non-zero value when the tile is on the bottom edge
+# and does not have full imaged tile length.
+
+sub t2p_tile_is_bottom_edge {
+    my ( $tiles, $tile ) = @_;
+
+    if (
+        (
+            ( $tile + 1 ) >
+            ( $tiles->{tiles_tilecount} - $tiles->{tiles_tilecountx} )
+        )
+        && ( $tiles->{tiles_edgetilelength} != 0 )
+      )
+    {
+        return 1;
+    }
+    return 0;
+}
+
 exit main();
