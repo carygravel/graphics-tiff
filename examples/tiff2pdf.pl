@@ -1036,4 +1036,18 @@ sub t2p_read_tiff_data {
     return;
 }
 
+# Returns a non-zero value when the tile is on the right edge
+# and does not have full imaged tile width.
+
+sub t2p_tile_is_right_edge {
+    my ( $tiles, $tile ) = @_;
+
+    if (   ( ( $tile + 1 ) % $tiles->{tiles_tilecountx} == 0 )
+        && ( $tiles->{tiles_edgetilewidth} != 0 ) )
+    {
+        return 1;
+    }
+    return 0;
+}
+
 exit main();
