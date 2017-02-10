@@ -1079,4 +1079,14 @@ sub t2p_tile_is_edge {
       t2p_tile_is_bottom_edge( $tiles, $tile );
 }
 
+# Returns a non-zero value when the tile is a right edge tile and a bottom
+# edge tile.
+
+sub t2p_tile_is_corner_edge {
+    my ( $tiles, $tile ) = @_;
+
+    return t2p_tile_is_right_edge( $tiles, $tile ) &
+      t2p_tile_is_bottom_edge( $tiles, $tile );
+}
+
 exit main();
