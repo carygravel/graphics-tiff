@@ -43,6 +43,9 @@ Readonly my $EXIT_FAILURE => 1;
 Readonly my $T2P_ERR_OK    => 0;
 Readonly my $T2P_ERR_ERROR => 1;
 
+Readonly my $SEEK_SET => 0;    # Seek from beginning of file.
+Readonly my $SEEK_CUR => 1;    # Seek from current position.
+
 our $VERSION;
 
 my ($optarg);
@@ -204,7 +207,7 @@ sub main {
     # Validate
     t2p_validate( \%t2p );
 
-    #    t2pSeekFile($output, 0, $SEEK_SET);
+    t2pSeekFile( $output, 0, $SEEK_SET );
 
     # Write
     t2p_write_pdf( \%t2p, $input, $output );
@@ -1087,6 +1090,387 @@ sub t2p_tile_is_corner_edge {
 
     return t2p_tile_is_right_edge( $tiles, $tile ) &
       t2p_tile_is_bottom_edge( $tiles, $tile );
+}
+
+# Reads the raster image data from the input TIFF for an image and writes
+# the data to the output PDF XObject image dictionary stream.  It returns the amount written
+# or zero on error.
+
+sub t2p_readwrite_pdf_image {
+    my ( $t2p, $input, $output ) = @_;
+
+    my $written         = 0;
+    my $buffer          = 0;
+    my $samplebuffer    = 0;
+    my $read            = 0;
+    my $i               = 0;
+    my $j               = 0;
+    my $stripcount      = 0;
+    my $stripsize       = 0;
+    my $sepstripcount   = 0;
+    my $sepstripsize    = 0;
+    my $inputoffset     = 0;
+    my $h_samp          = 1;
+    my $v_samp          = 1;
+    my $ri              = 1;
+    my $rows            = 0;
+    my $striplength     = 0;
+    my $max_striplength = 0;
+
+    # Fail if prior error (in particular, can't trust tiff_datasize)
+    if ( $t2p->{t2p_error} != $T2P_ERR_OK ) { return 0 }
+
+    if ( $t2p->{pdf_transcode} == $T2P_TRANSCODE_RAW ) {
+        if ( $t2p->{pdf_compression} == $T2P_COMPRESS_G4 ) {
+            $buffer = $input->ReadRawStrip( 0, $t2p->{tiff_datasize} );
+            if ( $t2p->{tiff_fillorder} == FILLORDER_LSB2MSB ) {
+
+                # make sure is lsb-to-msb
+                # bit-endianness fill order
+                TIFFReverseBits( $buffer, $t2p->{tiff_datasize} );
+            }
+            t2pWriteFile( $output, $buffer, $t2p->{tiff_datasize} );
+            return $t2p->{tiff_datasize};
+        }
+        if ( $t2p->{pdf_compression} == $T2P_COMPRESS_ZIP ) {
+            $buffer = $input->ReadRawStrip( 0, $t2p->{tiff_datasize} );
+            if ( $t2p->{tiff_fillorder} == FILLORDER_LSB2MSB ) {
+                TIFFReverseBits( $buffer, $t2p->{tiff_datasize} );
+            }
+            t2pWriteFile( $output, $buffer, $t2p->{tiff_datasize} );
+            return $t2p->{tiff_datasize};
+        }
+        if ( $t2p->{tiff_compression} == COMPRESSION_OJPEG ) {
+
+            if ( $t2p->{tiff_dataoffset} != 0 ) {
+                if ( $t2p->{pdf_ojpegiflength} == 0 ) {
+                    $inputoffset = t2pSeekFile( $input, 0, $SEEK_CUR );
+                    t2pSeekFile( $input, $t2p->{tiff_dataoffset}, $SEEK_SET );
+                    t2pReadFile( $input, $buffer, $t2p->{tiff_datasize} );
+                    t2pSeekFile( $input, $inputoffset, $SEEK_SET );
+                    t2pWriteFile( $output, $buffer, $t2p->{tiff_datasize} );
+                    return $t2p->{tiff_datasize};
+                }
+                else {
+                    $inputoffset = t2pSeekFile( $input, 0, $SEEK_CUR );
+                    t2pSeekFile( $input, $t2p->{tiff_dataoffset}, $SEEK_SET );
+                    $buffer = t2pReadFile( $input, $t2p->{pdf_ojpegiflength} );
+                    $t2p->{pdf_ojpegiflength} = 0;
+                    t2pSeekFile( $input, $inputoffset, $SEEK_SET );
+                    ( $h_samp, $v_samp ) =
+                      $input->TIFFGetField(TIFFTAG_YCBCRSUBSAMPLING);
+                    $buffer .= 0xff;
+                    $buffer .= 0xdd;
+                    $buffer .= 0x00;
+                    $buffer .= 0x04;
+                    $h_samp *= 8;
+                    $v_samp *= 8;
+                    $ri = ( $t2p->{tiff_width} + $h_samp - 1 ) / $h_samp;
+                    $rows->$input->TIFFGetField(TIFFTAG_ROWSPERSTRIP);
+                    $ri *= ( $rows + $v_samp - 1 ) / $v_samp;
+                    $buffer .= ( $ri >> 8 ) & 0xff;
+                    $buffer .= $ri & 0xff;
+                    $stripcount = $input->NumberOfStrips();
+
+                    for my $i ( 0 .. $stripcount - 1 ) {
+                        if ( $i != 0 ) {
+                            $buffer .= 0xff;
+                            $buffer .= ( 0xd0 | ( ( $i - 1 ) % 8 ) );
+                        }
+                        $buffer .= $input->ReadRawStrip( $i, -1 );
+                    }
+                    t2pWriteFile( $output, $buffer, length($buffer) );
+                    return length($buffer);
+                }
+            }
+            else {
+                if ( !$t2p->{pdf_ojpegdata} ) {
+                    my $msg =
+                      sprintf
+"$TIFF2PDF_MODULE: No support for OJPEG image %s with bad tables",
+                      $input->FileName();
+                    warn "$msg\n";
+                    $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                    return 0;
+                }
+                _TIFFmemcpy( $buffer, $t2p->{pdf_ojpegdata},
+                    $t2p->{pdf_ojpegdatalength} );
+                $stripcount = $input->NumberOfStrips();
+                for my $i ( 0 .. $stripcount - 1 ) {
+                    if ( $i != 0 ) {
+                        $buffer .= 0xff;
+                        $buffer .= ( 0xd0 | ( ( $i - 1 ) % 8 ) );
+                    }
+                    $buffer .= $input->ReadRawStrip( $i, -1 );
+                }
+                if (   substr( $buffer, length($buffer), 1 ) != 0xd9
+                    or substr( $buffer, length($buffer) - 1, 1 ) != 0xff )
+                {
+                    $buffer .= 0xff;
+                    $buffer .= 0xd9;
+                }
+                t2pWriteFile( $output, $buffer, length($buffer) );
+                return length($buffer);
+            }
+            return $t2p->{tiff_datasize};
+        }
+        if ( $t2p->{tiff_compression} == COMPRESSION_JPEG ) {
+            if ( my ( $count, $jpt ) =
+                $input->GetField(TIFFTAG_JPEGTABLES) != 0 )
+            {
+                if ( $count > 4 ) {
+                    _TIFFmemcpy( $buffer, $jpt, $count );
+                }
+            }
+            $stripcount = $input->NumberOfStrips();
+            my @sbc = $input->GetField(TIFFTAG_STRIPBYTECOUNTS);
+            for my $i ( 0 .. $stripcount - 1 ) {
+                if ( $sbc[$i] > $max_striplength ) {
+                    $max_striplength = $sbc[$i];
+                }
+            }
+            for my $i ( 0 .. $stripcount - 1 ) {
+                my $stripbuffer = $input->ReadRawStrip( $i, -1 );
+                if (
+                    !t2p_process_jpeg_strip(
+                        $stripbuffer, length($stripbuffer),
+                        $buffer,      length($buffer),
+                        $i,           $t2p->{tiff_length}
+                    )
+                  )
+                {
+                    my $msg =
+                      sprintf
+"$TIFF2PDF_MODULE: Can't process JPEG data in input file %s",
+                      $input->FileName();
+                    warn "$msg\n";
+                    $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                    return 0;
+                }
+            }
+            $buffer .= 0xff;
+            $buffer .= 0xd9;
+            t2pWriteFile( $output, $buffer, length($buffer) );
+            return length($buffer);
+        }
+        0;
+    }
+
+    if ( $t2p->{pdf_sample} == $T2P_SAMPLE_NOTHING ) {
+        $stripsize  = $input->StripSize();
+        $stripcount = $input->TIFFNumberOfStrips();
+        for my $i ( 0 .. $stripcount - 1 ) {
+            my $stripbuffer = $input->ReadEncodedStrip( $i, $stripsize );
+            if ( length($stripbuffer) == 0 ) {
+                my $msg =
+                  sprintf "$TIFF2PDF_MODULE: Error on decoding strip %u of %s",
+                  $i, $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return 0;
+            }
+            $buffer .= $stripbuffer;
+        }
+    }
+    else {
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_PLANAR_SEPARATE_TO_CONTIG ) {
+
+            $sepstripsize  = $input->StripSize();
+            $sepstripcount = $input->NumberOfStrips();
+
+            $stripsize  = $sepstripsize * $t2p->{tiff_samplesperpixel};
+            $stripcount = $sepstripcount / $t2p->{tiff_samplesperpixel};
+
+            for my $i ( 0 .. $stripcount - 1 ) {
+                for my $j ( 0 .. $t2p->{tiff_samplesperpixel} - 1 ) {
+                    my $stripbuffer =
+                      $input->ReadEncodedStrip( $i + $j * $stripcount,
+                        $sepstripsize );
+                    if ( length($stripbuffer) == 0 ) {
+                        my $msg =
+                          sprintf
+                          "$TIFF2PDF_MODULE: Error on decoding strip %u of %s",
+                          $i + $j * $stripcount, $input->FileName();
+                        warn "$msg\n";
+                        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                        return 0;
+                    }
+                    $buffer .= $stripbuffer;
+                }
+                $buffer .=
+                  t2p_sample_planar_separate_to_contig( $t2p, $samplebuffer,
+                    length $samplebuffer );
+            }
+            goto dataready;
+        }
+
+        $stripsize  = $input->StripSize();
+        $stripcount = $input->NumberOfStrips();
+        for my $i ( 0 .. $stripcount - 1 ) {
+            my $stripbuffer = $input->ReadEncodedStrip( $i, $stripsize );
+            if ( length($stripbuffer) == 0 ) {
+                my $msg =
+                  sprintf "$TIFF2PDF_MODULE: Error on decoding strip %u of %s",
+                  $i, $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return 0;
+            }
+            $buffer .= $stripbuffer;
+        }
+
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_REALIZE_PALETTE ) {
+
+            # FIXME: overflow?
+            $buffer = $samplebuffer;
+            $t2p->{tiff_datasize} *= $t2p->{tiff_samplesperpixel};
+            t2p_sample_realize_palette( $t2p, $buffer );
+        }
+
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_RGBA_TO_RGB ) {
+            $t2p->{tiff_datasize} = t2p_sample_rgba_to_rgb( $buffer,
+                $t2p->{tiff_width} * $t2p->{tiff_length} );
+        }
+
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_RGBAA_TO_RGB ) {
+            $t2p->{tiff_datasize} = t2p_sample_rgbaa_to_rgb( $buffer,
+                $t2p->{tiff_width} * $t2p->{tiff_length} );
+        }
+
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_YCBCR_TO_RGB ) {
+            $buffer =
+              $input->ReadRGBAImageOriented( $t2p->{tiff_width},
+                $t2p->{tiff_length}, ORIENTATION_TOPLEFT, 0 );
+            if ( !$buffer ) {
+                my $msg =
+                  sprintf
+"$TIFF2PDF_MODULE: Can't use TIFFReadRGBAImageOriented to extract RGB image from %s",
+                  $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return 0;
+            }
+            $t2p->{tiff_datasize} = t2p_sample_abgr_to_rgb( $buffer,
+                $t2p->{tiff_width} * $t2p->{tiff_length} );
+
+        }
+
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_LAB_SIGNED_TO_UNSIGNED ) {
+            $t2p->{tiff_datasize} = t2p_sample_lab_signed_to_unsigned( $buffer,
+                $t2p->{tiff_width} * $t2p->{tiff_length} );
+        }
+    }
+
+  dataready:
+
+    t2p_disable($output);
+    $output->SetField( TIFFTAG_PHOTOMETRIC,     $t2p->{tiff_photometric} );
+    $output->SetField( TIFFTAG_BITSPERSAMPLE,   $t2p->{tiff_bitspersample} );
+    $output->SetField( TIFFTAG_SAMPLESPERPIXEL, $t2p->{tiff_samplesperpixel} );
+    $output->SetField( TIFFTAG_IMAGEWIDTH,      $t2p->{tiff_width} );
+    $output->SetField( TIFFTAG_IMAGELENGTH,     $t2p->{tiff_length} );
+    $output->SetField( TIFFTAG_ROWSPERSTRIP,    $t2p->{tiff_length} );
+    $output->SetField( TIFFTAG_PLANARCONFIG,    PLANARCONFIG_CONTIG );
+    $output->SetField( TIFFTAG_FILLORDER,       FILLORDER_MSB2LSB );
+
+    given ( $t2p->{pdf_compression} ) {
+        when ($T2P_COMPRESS_NONE) {
+            $output->SetField( TIFFTAG_COMPRESSION, COMPRESSION_NONE );
+        }
+        when ($T2P_COMPRESS_G4) {
+            $output->SetField( TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4 );
+        }
+        when ($T2P_COMPRESS_JPEG) {
+            if ( $t2p->{tiff_photometric} == PHOTOMETRIC_YCBCR ) {
+                my ( $hor, $ver ) = ( 0, 0 );
+                if ( ( $hor, $ver ) =
+                    $input->GetField(TIFFTAG_YCBCRSUBSAMPLING) != 0 )
+                {
+                    if ( $hor != 0 && $ver != 0 ) {
+                        $output->SetField( TIFFTAG_YCBCRSUBSAMPLING, $hor,
+                            $ver );
+                    }
+                }
+                my $xfloatp = $input->TIFFGetField(TIFFTAG_REFERENCEBLACKWHITE);
+                if ( $xfloatp != 0 ) {
+                    $output->SetField( TIFFTAG_REFERENCEBLACKWHITE, $xfloatp );
+                }
+            }
+            if ( $output->SetField( TIFFTAG_COMPRESSION, COMPRESSION_JPEG ) ==
+                0 )
+            {
+                my $msg =
+                  sprintf
+"$TIFF2PDF_MODULE: Unable to use JPEG compression for input %s and output %s",
+                  $input->FileName(), $output->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return 0;
+            }
+            $output->SetField( TIFFTAG_JPEGTABLESMODE, 0 );
+
+            if ( $t2p->{pdf_colorspace} & ( $T2P_CS_RGB | $T2P_CS_LAB ) ) {
+                $output->SetField( TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_YCBCR );
+                if ( $t2p->{tiff_photometric} != PHOTOMETRIC_YCBCR ) {
+                    $output->SetField( TIFFTAG_JPEGCOLORMODE,
+                        JPEGCOLORMODE_RGB );
+                }
+                else {
+                    $output->SetField( TIFFTAG_JPEGCOLORMODE,
+                        JPEGCOLORMODE_RAW );
+                }
+            }
+            if ( $t2p->{pdf_colorspace} & $T2P_CS_GRAY ) {
+                0;
+            }
+            if ( $t2p->{pdf_colorspace} & $T2P_CS_CMYK ) {
+                0;
+            }
+            if ( $t2p->{pdf_defaultcompressionquality} != 0 ) {
+                $output->SetField( TIFFTAG_JPEGQUALITY,
+                    $t2p->{pdf_defaultcompressionquality} );
+            }
+
+        }
+        when ($T2P_COMPRESS_ZIP) {
+            $output->SetField( TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE );
+            if ( $t2p->{pdf_defaultcompressionquality} % 100 != 0 ) {
+                $output->SetField( TIFFTAG_PREDICTOR,
+                    $t2p->{pdf_defaultcompressionquality} % 100 );
+            }
+            if ( $t2p->{pdf_defaultcompressionquality} / 100 != 0 ) {
+                $output->SetField( TIFFTAG_ZIPQUALITY,
+                    ( $t2p->{pdf_defaultcompressionquality} / 100 ) );
+            }
+        }
+    }
+
+    t2p_enable($output);
+    $t2p->{outputwritten} = 0;
+    my $bufferoffset;
+    if (   $t2p->{pdf_compression} == $T2P_COMPRESS_JPEG
+        && $t2p->{tiff_photometric} == PHOTOMETRIC_YCBCR )
+    {
+        $bufferoffset =
+          $output->WriteEncodedStrip( 0, $buffer, $stripsize * $stripcount );
+    }
+    else {
+        $bufferoffset =
+          $output->WriteEncodedStrip( 0, $buffer, $t2p->{tiff_datasize} );
+    }
+
+    if ( $bufferoffset == -1 ) {
+        my $msg =
+          sprintf
+          "$TIFF2PDF_MODULE: Error writing encoded strip to output PDF %s",
+          $output->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return 0;
+    }
+
+    $written = $t2p->{outputwritten};
+    return $written;
 }
 
 exit main();
