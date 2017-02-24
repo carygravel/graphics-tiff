@@ -1473,4 +1473,334 @@ sub t2p_readwrite_pdf_image {
     return $written;
 }
 
+# This function reads the raster image data from the input TIFF for an image
+# tile and writes the data to the output PDF XObject image dictionary stream
+# for the tile.  It returns the amount written or zero on error.
+
+sub t2p_readwrite_pdf_image_tile {
+    my ( $t2p, $input, $output, $tile ) = @_;
+
+    my $edge         = 0;
+    my $written      = 0;
+    my $read         = 0;
+    my $tilecount    = 0;
+    my $tilesize     = 0;
+    my $septilecount = 0;
+    my $septilesize  = 0;
+    my ($buffer);
+
+    # Fail if prior error (in particular, can't trust tiff_datasize)
+    if ( $t2p->{t2p_error} != $T2P_ERR_OK ) { return 0 }
+
+    $edge |=
+      t2p_tile_is_right_edge( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ], $tile );
+    $edge |=
+      t2p_tile_is_bottom_edge( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ], $tile );
+
+    if (
+        $t2p->{pdf_transcode} == $T2P_TRANSCODE_RAW
+        && (   $edge == 0
+            || $t2p->{pdf_compression} == $T2P_COMPRESS_JPEG )
+      )
+    {
+        if ( $t2p->{pdf_compression} == $T2P_COMPRESS_G4 ) {
+            $buffer = $input->ReadRawTile( $tile, $t2p->{tiff_datasize} );
+            if ( $t2p->{tiff_fillorder} == FILLORDER_LSB2MSB ) {
+                TIFFReverseBits( $buffer, $t2p->{tiff_datasize} );
+            }
+            $output .= $buffer;
+            return $t2p->{tiff_datasize};
+        }
+        if ( $t2p->{pdf_compression} == $T2P_COMPRESS_ZIP ) {
+            $buffer = $input->ReadRawTile( $tile, $t2p->{tiff_datasize} );
+            if ( $t2p->{tiff_fillorder} == FILLORDER_LSB2MSB ) {
+                TIFFReverseBits( $buffer, $t2p->{tiff_datasize} );
+            }
+            $output .= $buffer;
+            return $t2p->{tiff_datasize};
+        }
+        if ( $t2p->{tiff_compression} == COMPRESSION_OJPEG ) {
+            if ( !$t2p->{pdf_ojpegdata} ) {
+                my $msg =
+                  sprintf
+"$TIFF2PDF_MODULE: No support for OJPEG image %s with bad tables",
+                  $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return 0;
+            }
+            $buffer = $t2p->{pdf_ojpegdata};
+            if ( $edge != 0 ) {
+                if (
+                    t2p_tile_is_bottom_edge(
+                        $t2p->{tiff_tiles}[ $t2p->{pdf_page} ], $tile
+                    )
+                  )
+                {
+                    substr( $buffer, 7 ) =
+                      ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]
+                          {tiles_edgetilelength} >> 8 ) & 0xff;
+                    substr( $buffer, 8 ) =
+                      ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]
+                          {tiles_edgetilelength} ) & 0xff;
+                }
+                if (
+                    t2p_tile_is_right_edge(
+                        $t2p->{tiff_tiles}[ $t2p->{pdf_page} ], $tile
+                    )
+                  )
+                {
+                    substr( $buffer, 9 ) =
+                      ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]
+                          {tiles_edgetilewidth} >> 8 ) & 0xff;
+                    substr( $buffer, 10 ) =
+                      ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]
+                          {tiles_edgetilewidth} ) & 0xff;
+                }
+            }
+            my $bufferoffset = $t2p->{pdf_ojpegdatalength};
+
+            $buffer .= $input->ReadRawTile( $tile, -1 );
+            $buffer .= chr(0xff);
+            $buffer .= chr(0xd9);
+            $output .= $buffer;
+            return length $buffer;
+        }
+        if ( $t2p->{tiff_compression} == COMPRESSION_JPEG ) {
+            my $count = 0;
+            my $jpt;
+            my @table_end;
+            if ( ( my ( $count, $jpt ) = $input->GetField(TIFFTAG_JPEGTABLES) )
+                != 0 )
+            {
+                if ( $count > 0 ) {
+                    $buffer = $jpt;
+                    my $xuint32 = length($buffer) - $count - 2;
+                    $table_end[0] = substr( $buffer, -2 );
+                    $table_end[1] = substr( $buffer, -1 );
+                    $buffer = substr( $buffer, 0, -2 );
+                    $buffer .= $input->ReadRawTile( $tile, -1 );
+                    substr( $buffer, $xuint32 - 2 ) = $table_end[0];
+                    substr( $buffer, $xuint32 - 1 ) = $table_end[1];
+                }
+                else {
+                    $buffer .= $input->ReadRawTile( $tile, -1 );
+                }
+            }
+            $output .= $buffer;
+            return length $buffer;
+        }
+        0;
+    }
+
+    if ( $t2p->{pdf_sample} == $T2P_SAMPLE_NOTHING ) {
+        my $samplebuffer =
+          $input->ReadEncodedTile( $tile, $t2p->{tiff_datasize} );
+        if ( length $samplebuffer == 0 ) {
+            my $msg =
+              sprintf "$TIFF2PDF_MODULE: Error on decoding tile %u of %s",
+              $tile, $input->FileName();
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return 0;
+        }
+        $buffer .= $samplebuffer;
+
+    }
+    else {
+        if ( $t2p->{pdf_sample} == $T2P_SAMPLE_PLANAR_SEPARATE_TO_CONTIG ) {
+            my $septilesize  = $input->TIFFTileSize();
+            my $septilecount = $input->TIFFNumberOfTiles();
+            my $tilesize     = $septilesize * $t2p->{tiff_samplesperpixel};
+            my $tilecount    = $septilecount / $t2p->{tiff_samplesperpixel};
+            my $samplebuffer;
+            for my $i ( 0 .. $t2p->{tiff_samplesperpixel} - 1 ) {
+                my $tilebuffer =
+                  $input->TIFFReadEncodedTile( $tile + $i * $tilecount,
+                    $septilesize );
+                if ( length $tilebuffer == 0 ) {
+                    my $msg =
+                      sprintf
+                      "$TIFF2PDF_MODULE: Error on decoding tile %u of %s",
+                      $tile + $i * $tilecount, $input->FileName();
+                    warn "$msg\n";
+                    $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                    return 0;
+                }
+                $samplebuffer .= $tilebuffer;
+            }
+            $buffer .=
+              t2p_sample_planar_separate_to_contig( $t2p, $samplebuffer,
+                length $samplebuffer );
+        }
+
+        if ( length $buffer == 0 ) {
+            $buffer = $input->ReadEncodedTile( $tile, $t2p->{tiff_datasize} );
+            if ( length $buffer == 0 ) {
+                my $msg =
+                  sprintf "$TIFF2PDF_MODULE: Error on decoding tile %u of %s",
+                  $tile, $input->FileName();
+                warn "$msg\n";
+                $t2p->{t2p_error} = $T2P_ERR_ERROR;
+                return 0;
+            }
+        }
+
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_RGBA_TO_RGB ) {
+            $t2p->{tiff_datasize} = t2p_sample_rgba_to_rgb(
+                $buffer,
+                $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilewidth},
+                $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength}
+            );
+        }
+
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_RGBAA_TO_RGB ) {
+            $t2p->{tiff_datasize} = t2p_sample_rgbaa_to_rgb(
+                $buffer,
+                $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilewidth},
+                $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength}
+            );
+        }
+
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_YCBCR_TO_RGB ) {
+            my $msg =
+              sprintf
+              "$TIFF2PDF_MODULE: No support for YCbCr to RGB in tile for %s",
+              $input->FileName();
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return 0;
+        }
+
+        if ( $t2p->{pdf_sample} & $T2P_SAMPLE_LAB_SIGNED_TO_UNSIGNED ) {
+            $t2p->{tiff_datasize} = t2p_sample_lab_signed_to_unsigned(
+                $buffer,
+                $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilewidth},
+                $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength}
+            );
+        }
+    }
+
+    if ( t2p_tile_is_right_edge( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ], $tile )
+        != 0 )
+    {
+        t2p_tile_collapse_left(
+            $buffer,
+            $input->TileRowSize(),
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilewidth},
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_edgetilewidth},
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength}
+        );
+    }
+
+    t2p_disable($output);
+    $output->SetField( TIFFTAG_PHOTOMETRIC,     $t2p->{tiff_photometric} );
+    $output->SetField( TIFFTAG_BITSPERSAMPLE,   $t2p->{tiff_bitspersample} );
+    $output->SetField( TIFFTAG_SAMPLESPERPIXEL, $t2p->{tiff_samplesperpixel} );
+    if ( t2p_tile_is_right_edge( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ], $tile )
+        == 0 )
+    {
+        $output->TIFFSetField( TIFFTAG_IMAGEWIDTH,
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilewidth} );
+    }
+    else {
+        $output->SetField( TIFFTAG_IMAGEWIDTH,
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_edgetilewidth} );
+    }
+    if (
+        t2p_tile_is_bottom_edge(
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ], $tile
+        ) == 0
+      )
+    {
+        $output->SetField( TIFFTAG_IMAGELENGTH,
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength} );
+        $output->TIFFSetField( TIFFTAG_ROWSPERSTRIP,
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength} );
+    }
+    else {
+        $output->SetField( TIFFTAG_IMAGELENGTH,
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_edgetilelength} );
+        $output->SetField( TIFFTAG_ROWSPERSTRIP,
+            $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_edgetilelength} );
+    }
+    $output->SetField( TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG );
+    $output->SetField( TIFFTAG_FILLORDER,    FILLORDER_MSB2LSB );
+
+    given ( $t2p->{pdf_compression} ) {
+        when ($T2P_COMPRESS_NONE) {
+            $output->SetField( TIFFTAG_COMPRESSION, COMPRESSION_NONE );
+        }
+        when ($T2P_COMPRESS_G4) {
+            $output->SetField( TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4 );
+        }
+        when ($T2P_COMPRESS_JPEG) {
+            if ( $t2p->{tiff_photometric} == PHOTOMETRIC_YCBCR ) {
+                my $hor = 0;
+                my $ver = 0;
+                ( $hor, $ver ) = $input->GetField(TIFFTAG_YCBCRSUBSAMPLING);
+                if ( $hor != 0 && $ver != 0 ) {
+                    $output->SetField( TIFFTAG_YCBCRSUBSAMPLING, $hor, $ver );
+                }
+                if ( my $xfloatp =
+                    $input->GetField(TIFFTAG_REFERENCEBLACKWHITE) != 0 )
+                {
+                    $output->SetField( TIFFTAG_REFERENCEBLACKWHITE, $xfloatp );
+                }
+            }
+            $output->SetField( TIFFTAG_COMPRESSION,    COMPRESSION_JPEG );
+            $output->SetField( TIFFTAG_JPEGTABLESMODE, 0 )
+              ;    # JPEGTABLESMODE_NONE
+            if ( $t2p->{pdf_colorspace} & ( $T2P_CS_RGB | $T2P_CS_LAB ) ) {
+                $output->SetField( TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_YCBCR );
+                if ( $t2p->{tiff_photometric} != PHOTOMETRIC_YCBCR ) {
+                    $output->SetField( TIFFTAG_JPEGCOLORMODE,
+                        JPEGCOLORMODE_RGB );
+                }
+                else {
+                    $output->SetField( TIFFTAG_JPEGCOLORMODE,
+                        JPEGCOLORMODE_RAW );
+                }
+            }
+            if ( $t2p->{pdf_colorspace} & $T2P_CS_GRAY ) {
+                0;
+            }
+            if ( $t2p->{pdf_colorspace} & $T2P_CS_CMYK ) {
+                0;
+            }
+            if ( $t2p->{pdf_defaultcompressionquality} != 0 ) {
+                $output->SetField( TIFFTAG_JPEGQUALITY,
+                    $t2p->{pdf_defaultcompressionquality} );
+            }
+        }
+        when ($T2P_COMPRESS_ZIP) {
+            $output->SetField( TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE );
+            if ( $t2p->{pdf_defaultcompressionquality} % 100 != 0 ) {
+                $output->SetField( TIFFTAG_PREDICTOR,
+                    $t2p->{pdf_defaultcompressionquality} % 100 );
+            }
+            if ( $t2p->{pdf_defaultcompressionquality} / 100 != 0 ) {
+                $output->SetField( TIFFTAG_ZIPQUALITY,
+                    ( $t2p->{pdf_defaultcompressionquality} / 100 ) );
+            }
+        }
+    }
+
+    t2p_enable($output);
+    $t2p->{outputwritten} = 0;
+    my $bufferoffset =
+      $output->TIFFWriteEncodedStrip( 0, $buffer, $output->StripSize() );
+    if ( $bufferoffset == -1 ) {
+        my $msg =
+          sprintf
+          "$TIFF2PDF_MODULE: Error writing encoded tile to output PDF %s",
+          $output->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return 0;
+    }
+
+    return $t2p->{outputwritten};
+}
+
 exit main();
