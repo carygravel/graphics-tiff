@@ -1803,4 +1803,250 @@ sub t2p_readwrite_pdf_image_tile {
     return $t2p->{outputwritten};
 }
 
+sub t2p_process_ojpeg_tables {
+    my ( $t2p, $input ) = @_;
+
+    my (
+        $proc,      $q_length, $q,      $dc_length,
+        $dc,        $h_samp,   $v_samp, $code_count,
+        $ac_length, $ac,       $lp,     $pt
+    );
+    if ( !( $proc = $input->GetField(TIFFTAG_JPEGPROC) ) ) {
+        my $msg =
+          sprintf "$TIFF2PDF_MODULE: Missing JPEGProc field in OJPEG image %s",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return 0;
+    }
+    if ( $proc != JPEGPROC_BASELINE && $proc != JPEGPROC_LOSSLESS ) {
+        my $msg =
+          sprintf "$TIFF2PDF_MODULE: Bad JPEGProc field in OJPEG image %s",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return 0;
+    }
+    if ( !( ( $q_length, $q ) = $input->GetField(TIFFTAG_JPEGQTABLES) ) ) {
+        my $msg =
+          sprintf
+          "$TIFF2PDF_MODULE: Missing JPEGQTables field in OJPEG image %s",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return 0;
+    }
+    if ( $q_length < ( 64 * $t2p->{tiff_samplesperpixel} ) ) {
+        my $msg =
+          sprintf "$TIFF2PDF_MODULE: Bad JPEGQTables field in OJPEG image %s",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return 0;
+    }
+    if ( !( ( $dc_length, $dc ) = $input->GetField(TIFFTAG_JPEGDCTABLES) ) ) {
+        my $msg =
+          sprintf
+          "$TIFF2PDF_MODULE: Missing JPEGDCTables field in OJPEG image %s",
+          $input->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return 0;
+    }
+    if ( $proc == JPEGPROC_BASELINE ) {
+        if ( !( ( $ac_length, $ac ) = $input->GetField(TIFFTAG_JPEGACTABLES) ) )
+        {
+            my $msg =
+              sprintf
+              "$TIFF2PDF_MODULE: Missing JPEGACTables field in OJPEG image %s",
+              $input->FileName();
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return 0;
+        }
+    }
+    else {
+        $lp = $input->GetField(TIFFTAG_JPEGLOSSLESSPREDICTORS);
+        if ( !defined $lp ) {
+            my $msg =
+              sprintf
+"$TIFF2PDF_MODULE: Missing JPEGLosslessPredictors field in OJPEG image %s",
+              $input->FileName();
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return 0;
+        }
+        $pt = $input->GetField(TIFFTAG_JPEGPOINTTRANSFORM);
+        if ( !defined $pt ) {
+            my $msg =
+              sprintf
+"$TIFF2PDF_MODULE: Missing JPEGPointTransform field in OJPEG image %s",
+              $input->FileName();
+            warn "$msg\n";
+            $t2p->{t2p_error} = $T2P_ERR_ERROR;
+            return 0;
+        }
+    }
+    if (
+        !(
+            ( $h_samp, $v_samp ) =
+            $input->TIFFGetField(TIFFTAG_YCBCRSUBSAMPLING)
+        )
+      )
+    {
+        $h_samp = 1;
+        $v_samp = 1;
+    }
+    my $table_count = $t2p->{tiff_samplesperpixel};
+    if ( $proc == JPEGPROC_BASELINE and $table_count > 2 ) { $table_count = 2 }
+    my $ojpegdata = $t2p->{pdf_ojpegdata};
+    $ojpegdata .= chr 0xff;
+    $ojpegdata .= chr 0xd8;
+    $ojpegdata .= chr 0xff;
+    if ( $proc == JPEGPROC_BASELINE ) {
+        $ojpegdata .= chr 0xc0;
+    }
+    else {
+        $ojpegdata .= chr 0xc3;
+    }
+    $ojpegdata .= chr 0x00;
+    $ojpegdata .= chr( 8 + 3 * $t2p->{tiff_samplesperpixel} );
+    $ojpegdata .= chr( $t2p->{tiff_bitspersample} & 0xff );
+    if ( $input->IsTiled() ) {
+        $ojpegdata .= chr(
+            ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength} >> 8 ) &
+              0xff );
+        $ojpegdata .=
+          chr( ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength} ) &
+              0xff );
+        $ojpegdata .= chr(
+            ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilewidth} >> 8 ) &
+              0xff );
+        $ojpegdata .=
+          chr( ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilewidth} ) &
+              0xff );
+    }
+    else {
+        $ojpegdata .= chr( ( $t2p->{tiff_length} >> 8 ) & 0xff );
+        $ojpegdata .= chr( $t2p->{tiff_length} & 0xff );
+        $ojpegdata .= chr( ( $t2p->{tiff_width} >> 8 ) & 0xff );
+        $ojpegdata .= chr( $t2p->{tiff_width} & 0xff );
+    }
+    $ojpegdata .= chr( $t2p->{tiff_samplesperpixel} & 0xff );
+    for my $i ( 0 .. $t2p->{tiff_samplesperpixel} - 1 ) {
+        $ojpegdata .= chr $i;
+        if ( $i == 0 ) {
+            substr( $ojpegdata, -1 ) |= chr( $h_samp << 4 & 0xf0 );
+            $ojpegdata .= chr( $v_samp & 0x0f );
+        }
+        else {
+            $ojpegdata .= chr 0x11;
+        }
+        $ojpegdata .= chr $i;
+    }
+    for my $dest ( 0 .. $t2p->{tiff_samplesperpixel} - 1 ) {
+        $ojpegdata .= chr 0xff;
+        $ojpegdata .= chr 0xdb;
+        $ojpegdata .= chr 0x00;
+        $ojpegdata .= chr 0x43;
+        $ojpegdata .= chr $dest;
+        $ojpegdata .= substr $q, 64 * $dest, 64;
+    }
+    my $offset_table = 0;
+    for my $dest ( 0 .. $table_count - 1 ) {
+        $ojpegdata .= chr 0xff;
+        $ojpegdata .= chr 0xc4;
+        my $offset_ms_l = length $ojpegdata;
+        $ojpegdata .= '..';                  #placeholders to be filled below
+        $ojpegdata .= chr( $dest & 0x0f );
+        $ojpegdata .= substr $dc, $offset_table, 16;
+        $code_count = 0;
+        $offset_table += 16;
+
+        for my $i ( 0 .. 15 ) {
+            $code_count += ord substr( $ojpegdata, $i - 16, 1 );
+        }
+        substr( $ojpegdata, $offset_ms_l ) =
+          chr( ( ( 19 + $code_count ) >> 8 ) & 0xff );
+        substr( $ojpegdata, $offset_ms_l + 1 ) =
+          chr( ( 19 + $code_count ) & 0xff );
+        $ojpegdata .= substr $dc, $offset_table, $code_count;
+        $offset_table += $code_count;
+    }
+    if ( $proc == JPEGPROC_BASELINE ) {
+        $offset_table = 0;
+        for my $dest ( 0 .. $table_count - 1 ) {
+            $ojpegdata .= chr 0xff;
+            $ojpegdata .= chr 0xc4;
+            my $offset_ms_l = length $ojpegdata;
+            $ojpegdata .= '..';                 #placeholders to be filled below
+            $ojpegdata .= chr 0x10;
+            $ojpegdata .= chr( $dest & 0x0f );
+            $ojpegdata .= substr $ac, $offset_table, 16;
+            $code_count = 0;
+            $offset_table += 16;
+
+            for my $i ( 0 .. 15 ) {
+                $code_count += ord substr( $ojpegdata, $i - 16, 1 );
+            }
+            substr( $ojpegdata, $offset_ms_l ) =
+              chr( ( ( 19 + $code_count ) >> 8 ) & 0xff );
+            substr( $ojpegdata, $offset_ms_l + 1 ) =
+              chr( ( 19 + $code_count ) & 0xff );
+            $ojpegdata .= substr $dc, $offset_table, $code_count;
+            $offset_table += $code_count;
+        }
+    }
+    if ( $input->NumberOfStrips() > 1 ) {
+        $ojpegdata .= chr 0xff;
+        $ojpegdata .= chr 0xdd;
+        $ojpegdata .= chr 0x00;
+        $ojpegdata .= chr 0x04;
+        $h_samp *= 8;
+        $v_samp *= 8;
+        my $ri = ( $t2p->{tiff_width} + $h_samp - 1 ) / $h_samp;
+        my $rows->$input->GetField(TIFFTAG_ROWSPERSTRIP);
+        $ri *= ( $rows + $v_samp - 1 ) / $v_samp;
+        $ojpegdata .= chr( ( $ri >> 8 ) & 0xff );
+        $ojpegdata .= chr( $ri & 0xff );
+    }
+    $ojpegdata .= chr 0xff;
+    $ojpegdata .= chr 0xda;
+    $ojpegdata .= chr 0x00;
+    $ojpegdata .= chr( 6 + 2 * $t2p->{tiff_samplesperpixel} );
+    $ojpegdata .= chr( $t2p->{tiff_samplesperpixel} & 0xff );
+    for my $i ( 0 .. t2p->tiff_samplesperpixel- 1 ) {
+        $ojpegdata .= chr( $i & 0xff );
+        if ( $proc == JPEGPROC_BASELINE ) {
+            $ojpegdata .= chr(
+                (
+                    (
+                          ( $i > ( $table_count - 1 ) )
+                        ? ( $table_count - 1 )
+                        : $i
+                    ) << 4
+                ) & 0xf0
+            );
+            $ojpegdata .= chr(
+                ( ( $i > ( $table_count - 1 ) ) ? ( $table_count - 1 ) : $i ) &
+                  0x0f );
+        }
+        else {
+            $ojpegdata .= chr( ( $i << 4 ) & 0xf0 );
+        }
+    }
+    if ( $proc == JPEGPROC_BASELINE ) {
+        $ojpegdata .= chr 0x00;
+        $ojpegdata .= chr 0x3f;
+        $ojpegdata .= chr 0x00;
+    }
+    else {
+        $ojpegdata .= chr( substr( $lp, 0 ) & 0xff );
+        $ojpegdata .= chr 0x00;
+        $ojpegdata .= chr( substr( $pt, 0 ) & 0x0f );
+    }
+
+    return 1;
+}
+
 exit main();
