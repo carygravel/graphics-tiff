@@ -2049,4 +2049,126 @@ sub t2p_process_ojpeg_tables {
     return 1;
 }
 
+sub t2p_process_jpeg_strip {
+    my ( $strip, $striplength, $buffer, $bufferoffset, $no, $height ) = @_;
+
+    my $v_samp = 1;
+    my $h_samp = 1;
+    my $i      = 1;
+    while ( $i < $striplength ) {
+        given ( ord( substr( $i, 1 ) ) ) {
+            when (0xd8) {
+
+                # SOI - start of image
+                $buffer .= substr( $strip, $i - 1, 2 );
+                $i += 2;
+            }
+            when ( ( 0xc0 | 0xc1 | 0xc3 | 0xc9 | 0xca ) ) {
+                if ( $no == 0 ) {
+                    $bufferoffset = length $buffer;
+                    $buffer .=
+                      substr( $strip, $i - 1,
+                        ord( substr( $strip, $i + 2, 1 ) ) + 2 );
+                    for my $j (
+                        0 .. ord( substr( $buffer, $bufferoffset + 9, 1 ) ) )
+                    {
+                        if (
+                            (
+                                ord(
+                                    substr(
+                                        $buffer,
+                                        $bufferoffset + 11 + ( 2 * $j ), 1
+                                    )
+                                ) >> 4
+                            ) > $h_samp
+                          )
+                        {
+                            $h_samp = ord(
+                                substr(
+                                    $buffer, $bufferoffset + 11 + ( 2 * $j ),
+                                    1
+                                )
+                            ) >> 4;
+                        }
+                        if (
+                            (
+                                ord(
+                                    substr(
+                                        $buffer,
+                                        $bufferoffset + 11 + ( 2 * $j ), 1
+                                    )
+                                ) & 0x0f
+                            ) > $v_samp
+                          )
+                        {
+                            $v_samp = ord(
+                                substr(
+                                    $buffer, $bufferoffset + 11 + ( 2 * $j ),
+                                    1
+                                )
+                            ) & 0x0f;
+                        }
+                    }
+                    $v_samp *= 8;
+                    $h_samp *= 8;
+                    my $ri = (
+                        (
+                            ( substr( $buffer, $bufferoffset + 5, 1 ) << 8 ) |
+                              substr( $buffer, $bufferoffset + 6, 1 )
+                        ) + $v_samp - 1
+                      ) /
+                      $v_samp;
+                    $ri *= (
+                        (
+                            ( substr( $buffer, $bufferoffset + 7, 1 ) << 8 ) |
+                              substr( $buffer, $bufferoffset + 8, 1 )
+                        ) + $h_samp - 1
+                      ) /
+                      $h_samp;
+                    substr( $buffer, $bufferoffset + 5, 1 ) =
+                      ( $height >> 8 ) & 0xff;
+                    substr( $buffer, $bufferoffset + 6, 1 ) = $height & 0xff;
+                    $i += ord( substr( $strip, $i + 2, 1 ) ) + 2;
+
+                    $buffer .= chr 0xff;
+                    $buffer .= chr 0xdd;
+                    $buffer .= chr 0x00;
+                    $buffer .= chr 0x04;
+                    $buffer .= chr( ( $ri >> 8 ) & 0xff );
+                    $buffer .= chr( $ri & 0xff );
+                }
+                else {
+                    $i += ord( substr( $strip, $i + 2, 1 ) ) + 2;
+                }
+            }
+            when ( ( 0xc4 | 0xdb ) ) {
+                $buffer .=
+                  substr( $strip, $i - 1,
+                    ord( substr( $strip, $i + 2, 1 ) ) + 2 );
+                $i += ord( substr( $strip, $i + 2, 1 ) ) + 2;
+            }
+            when (0xda) {
+                if ( $no == 0 ) {
+                    $buffer .=
+                      substr( $strip, $i - 1,
+                        ord( substr( $strip, $i + 2, 1 ) ) + 2 );
+                    $i += ord( substr( $strip, $i + 2, 1 ) ) + 2;
+                }
+                else {
+                    $buffer .= chr 0xff;
+                    $buffer .= chr( 0xd0 | ( ( $no - 1 ) % 8 ) );
+                    $i += ord( substr( $strip, $i + 2, 1 ) ) + 2;
+                }
+                $buffer .= substr( $strip, $i - 1, $striplength - $i - 1 );
+                return 1;
+            }
+            default {
+                $i += ord( substr( $strip, $i + 2, 1 ) ) + 2;
+            }
+        }
+    }
+
+    return 0;
+}
+
 exit main();
