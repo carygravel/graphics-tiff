@@ -2171,4 +2171,20 @@ sub t2p_process_jpeg_strip {
     return 0;
 }
 
+# This functions converts a tilewidth x tilelength buffer of samples into an edgetilewidth x
+# tilelength buffer of samples.
+
+sub t2p_tile_collapse_left {
+    my ( $buffer, $scanwidth, $tilewidth, $edgetilewidth, $tilelength ) = @_;
+
+    my $edgescanwidth =
+      ( $scanwidth * $edgetilewidth + ( $tilewidth - 1 ) ) / $tilewidth;
+    for my $i ( 0 .. $tilelength - 1 ) {
+        substr( $buffer, $edgescanwidth * $i, $edgescanwidth ) =
+          substr( $buffer, $scanwidth * $i, $edgescanwidth );
+    }
+
+    return;
+}
+
 exit main();
