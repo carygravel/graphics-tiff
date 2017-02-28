@@ -2187,4 +2187,24 @@ sub t2p_tile_collapse_left {
     return;
 }
 
+# This function calls TIFFWriteDirectory on the output after blanking its
+# output by replacing the read, write, and seek procedures with empty
+# implementations, then it replaces the original implementations.
+
+sub t2p_write_advance_directory {
+    my ( $t2p, $output ) = @_;
+    t2p_disable($output);
+    if ( !$output->WriteDirectory() ) {
+        my $msg =
+          sprintf
+          "$TIFF2PDF_MODULE: Error writing virtual directory to output PDF %s",
+          $output->FileName();
+        warn "$msg\n";
+        $t2p->{t2p_error} = $T2P_ERR_ERROR;
+        return 0;
+    }
+    t2p_enable($output);
+    return;
+}
+
 exit main();
