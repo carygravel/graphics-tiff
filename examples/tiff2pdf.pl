@@ -2207,4 +2207,18 @@ sub t2p_write_advance_directory {
     return;
 }
 
+sub t2p_sample_planar_separate_to_contig {
+    my ( $t2p, $buffer, $samplebuffer, $samplebuffersize ) = @_;
+
+    my $stride = $samplebuffersize / $t2p->{tiff_samplesperpixel};
+    for my $i ( 0 .. $stride - 1 ) {
+        for my $j ( 0 .. $t2p->{tiff_samplesperpixel} - 1 ) {
+            substr( $buffer, $i * $t2p->{tiff_samplesperpixel} + $j, 1 ) =
+              substr( $samplebuffer, $i + $j * $stride, 1 );
+        }
+    }
+
+    return $samplebuffersize;
+}
+
 exit main();
