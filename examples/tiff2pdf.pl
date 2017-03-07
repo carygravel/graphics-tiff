@@ -2247,6 +2247,23 @@ sub t2p_write_pdf_obj_start {
     return length $buffer;
 }
 
+# This function writes the PDF Catalog structure to output.
+
+sub t2p_write_pdf_catalog {
+    my ( $t2p, $output ) = @_;
+
+    my $buffer = "<< \n/Type /Catalog \n/Pages ";
+    $buffer .= sprintf '%lu', $t2p->{pdf_pages};
+    $buffer .= " 0 R \n";
+    if ( $t2p->{pdf_fitwindow} ) {
+        $buffer .= "/ViewerPreferences <</FitWindow true>>\n";
+    }
+    $buffer .= ">>\n";
+    print {$output} $buffer;
+
+    return length $buffer;
+}
+
 # This function writes a PDF to a file given a pointer to a TIFF.
 
 # The idea with using a TIFF* as output for a PDF file is that the file
