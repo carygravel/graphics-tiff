@@ -205,6 +205,12 @@ tiff_GetVersion (class)
                 XPUSHs(sv_2mortal(newSVpv((char *) TIFFGetVersion(), 0)));
 
 void
+tiff_IsCODECConfigured (class, compression)
+                uint16 compression
+        PPCODE:
+                XPUSHs(sv_2mortal(newSViv(TIFFIsCODECConfigured(compression))));
+
+void
 tiff__Open (class, path, flags)
 		const char*	path
 		const char*	flags
@@ -219,6 +225,12 @@ tiff_Close (tif)
                 TIFF		*tif;
         PPCODE:
                 TIFFClose(tif);
+
+void
+tiff_FileName (tif)
+                TIFF		*tif;
+        PPCODE:
+                XPUSHs(sv_2mortal(newSVpv((char *) TIFFFileName(tif), 0)));
 
 void
 tiff_ReadDirectory (tif)
@@ -318,6 +330,76 @@ tiff_GetField (tif, tag)
                     /* single uint32 */
                     default:
                         if (TIFFGetField (tif, tag, &ui32)) {
+                            XPUSHs(sv_2mortal(newSViv(ui32)));
+                        }
+                        break;
+                }
+
+void
+tiff_GetFieldDefaulted (tif, tag)
+                TIFF            *tif
+                uint32          tag
+	INIT:
+                uint16          ui16, ui16_2;
+                uint32          ui32;
+                uint64          *aui;
+                float           f;
+                int             vector_length;
+        PPCODE:
+                switch (tag) {
+                    /* single uint16 */
+		    case TIFFTAG_BITSPERSAMPLE:
+		    case TIFFTAG_COMPRESSION:
+		    case TIFFTAG_PHOTOMETRIC:
+		    case TIFFTAG_THRESHHOLDING:
+		    case TIFFTAG_FILLORDER:
+		    case TIFFTAG_ORIENTATION:
+		    case TIFFTAG_SAMPLESPERPIXEL:
+		    case TIFFTAG_MINSAMPLEVALUE:
+		    case TIFFTAG_MAXSAMPLEVALUE:
+		    case TIFFTAG_PLANARCONFIG:
+		    case TIFFTAG_RESOLUTIONUNIT:
+		    case TIFFTAG_MATTEING:
+                        if (TIFFGetFieldDefaulted (tif, tag, &ui16)) {
+                            XPUSHs(sv_2mortal(newSViv(ui16)));
+                        }
+                        break;
+
+                    /* single float */
+		    case TIFFTAG_XRESOLUTION:
+		    case TIFFTAG_YRESOLUTION:
+		    case TIFFTAG_XPOSITION:
+		    case TIFFTAG_YPOSITION:
+                        if (TIFFGetFieldDefaulted (tif, tag, &f)) {
+                            XPUSHs(sv_2mortal(newSVnv(f)));
+                        }
+                        break;
+
+                    /* two uint16 */
+		    case TIFFTAG_PAGENUMBER:
+		    case TIFFTAG_HALFTONEHINTS:
+                        if (TIFFGetFieldDefaulted (tif, tag, &ui16, &ui16_2)) {
+                            XPUSHs(sv_2mortal(newSViv(ui16)));
+                            XPUSHs(sv_2mortal(newSViv(ui16_2)));
+                        }
+                        break;
+
+                    /* array of uint64 */
+                    case TIFFTAG_TILEOFFSETS:
+                    case TIFFTAG_TILEBYTECOUNTS:
+                    case TIFFTAG_STRIPOFFSETS:
+                    case TIFFTAG_STRIPBYTECOUNTS:
+                        if (TIFFGetFieldDefaulted (tif, tag, &aui)) {
+                            int nstrips = TIFFNumberOfStrips(tif);
+                            int i;
+			    for (i = 0; i < nstrips; ++i)
+                                XPUSHs(sv_2mortal(newSViv(aui[i])));
+                        }
+                        break;
+
+                    /* single uint32 */
+                    default:
+                        if (TIFFGetFieldDefaulted (tif, tag, &ui32)) {
                             XPUSHs(sv_2mortal(newSViv(ui32)));
                         }
                         break;

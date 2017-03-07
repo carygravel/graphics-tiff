@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 28;
+use Test::More tests => 31;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -12,11 +12,15 @@ my $version = Graphics::TIFF->get_version_scalar;
 isnt $version, undef, 'version';
 
 SKIP: {
-    skip 'libtiff 4.0.3 or better required', 24 unless $version >= 4.000003;
+    skip 'libtiff 4.0.3 or better required', 29 unless $version >= 4.000003;
+
+    ok( Graphics::TIFF->IsCODECConfigured(COMPRESSION_DEFLATE),
+        'IsCODECConfigured' );
 
     system("convert -density 72 rose: test.tif");
 
     my $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
+    is( $tif->FileName, 'test.tif', 'FileName' );
     isa_ok $tif, 'Graphics::TIFF';
     can_ok $tif, qw(Close ReadDirectory GetField);
 
@@ -38,6 +42,9 @@ SKIP: {
     @counts = $tif->GetField(TIFFTAG_STRIPBYTECOUNTS);
     is_deeply( \@counts, [ 8190, 1470 ], 'GetField array of uint64' );
     is( $tif->GetField(TIFFTAG_IMAGEWIDTH), 70, 'GetField uint32' );
+
+    is( $tif->GetFieldDefaulted(TIFFTAG_FILLORDER),
+        FILLORDER_MSB2LSB, 'GetFieldDefaulted uint16' );
 
     is( $tif->SetField( TIFFTAG_FILLORDER, FILLORDER_LSB2MSB ),
         1, 'SetField status' );

@@ -2384,6 +2384,36 @@ sub t2p_pdf_tifftime {
     return;
 }
 
+# This function writes a PDF Pages Tree structure to output.
+
+sub t2p_write_pdf_pages {
+    my ( $t2p, $output ) = @_;
+
+    my $buffer .= "<< \n/Type /Pages \n/Kids [ ";
+    my $page = $t2p->{pdf_pages} + 1;
+    for my $i ( 0 .. $t2p->{tiff_pagecount} - 1 ) {
+        $buffer .= sprintf "%d", $page;
+        $buffer .= " 0 R ";
+        if ( ( ( $i + 1 ) % 8 ) == 0 ) {
+            $buffer .= "\n";
+        }
+        $page += 3;
+        $page += $t2p->{tiff_pages}[$i]{page_extra};
+        if ( $t2p->{tiff_pages}[$i]{page_tilecount} > 0 ) {
+            $page += ( 2 * $t2p->{tiff_pages}[$i]{page_tilecount} );
+        }
+        else {
+            $page += 2;
+        }
+    }
+    $buffer .= "] \n/Count ";
+    $buffer .= sprintf "%d", $t2p->{tiff_pagecount};
+    $buffer .= " \n>> \n";
+    print {$output} $buffer;
+
+    return length $buffer;
+}
+
 # This function writes a PDF to a file given a pointer to a TIFF.
 
 # The idea with using a TIFF* as output for a PDF file is that the file
