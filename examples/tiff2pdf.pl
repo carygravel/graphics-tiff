@@ -2221,4 +2221,212 @@ sub t2p_sample_planar_separate_to_contig {
     return $samplebuffersize;
 }
 
+# This function writes the PDF header to output.
+
+sub t2p_write_pdf_header {
+    my ( $t2p, $output ) = @_;
+
+    my $buffer = sprintf( '%%PDF-%u.%u ',
+        $t2p->{pdf_majorversion} & 0xff,
+        $t2p->{pdf_minorversion} & 0xff );
+    my $written = print {$output} $buffer;
+    $written += print {$output} "\n%\342\343\317\323\n";
+
+    return $written;
+}
+
+# This function writes a PDF to a file given a pointer to a TIFF.
+
+# The idea with using a TIFF* as output for a PDF file is that the file
+# can be created with TIFFClientOpen for memory-mapped use within the TIFF
+# library, and TIFFWriteEncodedStrip can be used to write compressed data to
+# the output.  The output is not actually a TIFF file, it is a PDF file.
+
+# This function uses only t2pWriteFile and TIFFWriteEncodedStrip to write to
+# the output TIFF file.  When libtiff would otherwise be writing data to the
+# output file, the write procedure of the TIFF structure is replaced with an
+# empty implementation.
+
+# The first argument to the function is an initialized and validated T2P
+# context struct pointer.
+
+# The second argument to the function is the TIFF* that is the input that has
+# been opened for reading and no other functions have been called upon it.
+
+# The third argument to the function is the TIFF* that is the output that has
+# been opened for writing.  It has to be opened so that it hasn't written any
+# data to the output.  If the output is seekable then it's OK to seek to the
+# beginning of the file.  The function only writes to the output PDF and does
+# not seek.  See the example usage in the main() function.
+
+#	TIFF* output = TIFFOpen("output.pdf", "w");
+#	assert(output != NULL);
+
+#	if(output->tif_seekproc != NULL){
+#		t2pSeekFile(output, (toff_t) 0, SEEK_SET);
+#	}
+
+# This function returns the file size of the output PDF file.  On error it
+# returns zero and the t2p->t2p_error variable is set to T2P_ERR_ERROR.
+
+# After this function completes, call t2p_free on t2p, TIFFClose on input,
+# and TIFFClose on output.
+
+sub t2p_write_pdf {
+    my ( $t2p, $input, $output ) = @_;
+
+    t2p_read_tiff_init( $t2p, $input );
+    if ( $t2p->{t2p_error} != $T2P_ERR_OK ) { return 0 }
+    $t2p->{pdf_xrefcount} = 0;
+    $t2p->{pdf_catalog}   = 1;
+    $t2p->{pdf_info}      = 2;
+    $t2p->{pdf_pages}     = 3;
+    my $written = t2p_write_pdf_header( $t2p, $output );
+    $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+    $t2p->{pdf_catalog} = $t2p->{pdf_xrefcount};
+    $written += t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+    $written += t2p_write_pdf_catalog( $t2p, $output );
+    $written += t2p_write_pdf_obj_end($output);
+    $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+    $t2p->{pdf_info} = $t2p->{pdf_xrefcount};
+    $written += t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+    $written += t2p_write_pdf_info( $t2p, $input, $output );
+    $written += t2p_write_pdf_obj_end($output);
+    $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+    $t2p->{pdf_pages} = $t2p->{pdf_xrefcount};
+    $written += t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+    $written += t2p_write_pdf_pages( $t2p, $output );
+    $written += t2p_write_pdf_obj_end($output);
+
+    for my $j ( 0 .. $t2p->{tiff_pagecount} - 1 ) {
+        $t2p->{pdf_page} = $j;
+        t2p_read_tiff_data( $t2p, $input );
+        if ( $t2p->{t2p_error} != $T2P_ERR_OK ) { return 0 }
+        $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+        $written += t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+        $written += t2p_write_pdf_page( $t2p->{pdf_xrefcount}, $t2p, $output );
+        $written += t2p_write_pdf_obj_end($output);
+        $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+        $written += t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+        $written += t2p_write_pdf_stream_dict_start($output);
+        $written +=
+          t2p_write_pdf_stream_dict( 0, $t2p->{pdf_xrefcount} + 1, $output );
+        $written += t2p_write_pdf_stream_dict_end($output);
+        $written += t2p_write_pdf_stream_start($output);
+        my $streamlen = $written;
+        $written += t2p_write_pdf_page_content_stream( $t2p, $output );
+        $streamlen = $written - $streamlen;
+        $written += t2p_write_pdf_stream_end($output);
+        $written += t2p_write_pdf_obj_end($output);
+        $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+        $written += t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+        $written += t2p_write_pdf_stream_length( $streamlen, $output );
+        $written += t2p_write_pdf_obj_end($output);
+
+        if ( $t2p->{tiff_transferfunctioncount} != 0 ) {
+            $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+            $written +=
+              t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+            $written += t2p_write_pdf_transfer( $t2p, $output );
+            $written += t2p_write_pdf_obj_end($output);
+            for my $i ( 0 .. $t2p->{tiff_transferfunctioncount} - 1 ) {
+                $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+                $written +=
+                  t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+                $written += t2p_write_pdf_stream_dict_start($output);
+                $written += t2p_write_pdf_transfer_dict( $t2p, $output, $i );
+                $written += t2p_write_pdf_stream_dict_end($output);
+                $written += t2p_write_pdf_stream_start($output);
+                $written += t2p_write_pdf_transfer_stream( $t2p, $output, $i );
+                $written += t2p_write_pdf_stream_end($output);
+                $written += t2p_write_pdf_obj_end($output);
+            }
+        }
+        if ( ( $t2p->{pdf_colorspace} & $T2P_CS_PALETTE ) != 0 ) {
+            $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+            $t2p->{pdf_palettecs} = $t2p->{pdf_xrefcount};
+            $written +=
+              t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+            $written += t2p_write_pdf_stream_dict_start($output);
+            $written +=
+              t2p_write_pdf_stream_dict( $t2p->{pdf_palettesize}, 0, $output );
+            $written += t2p_write_pdf_stream_dict_end($output);
+            $written += t2p_write_pdf_stream_start($output);
+            $written += t2p_write_pdf_xobject_palettecs_stream( $t2p, $output );
+            $written += t2p_write_pdf_stream_end($output);
+            $written += t2p_write_pdf_obj_end($output);
+        }
+        if ( ( $t2p->{pdf_colorspace} & $T2P_CS_ICCBASED ) != 0 ) {
+            $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+            $t2p->{pdf_icccs} = $t2p->{pdf_xrefcount};
+            $written +=
+              t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+            $written += t2p_write_pdf_stream_dict_start($output);
+            $written += t2p_write_pdf_xobject_icccs_dict( $t2p, $output );
+            $written += t2p_write_pdf_stream_dict_end($output);
+            $written += t2p_write_pdf_stream_start($output);
+            $written += t2p_write_pdf_xobject_icccs_stream( $t2p, $output );
+            $written += t2p_write_pdf_stream_end($output);
+            $written += t2p_write_pdf_obj_end($output);
+        }
+        if ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilecount} != 0 ) {
+            for my $i (
+                0 .. $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilecount} -
+                1 )
+            {
+                $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+                $written +=
+                  t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+                $written += t2p_write_pdf_stream_dict_start($output);
+                $written +=
+                  t2p_write_pdf_xobject_stream_dict( $i + 1, $t2p, $output );
+                $written += t2p_write_pdf_stream_dict_end($output);
+                $written += t2p_write_pdf_stream_start($output);
+                my $streamlen = $written;
+                t2p_read_tiff_size_tile( $t2p, $input, $i );
+                $written +=
+                  t2p_readwrite_pdf_image_tile( $t2p, $input, $output, $i );
+                t2p_write_advance_directory( $t2p, $output );
+                if ( $t2p->{t2p_error} != $T2P_ERR_OK ) { return 0 }
+                $streamlen = $written - $streamlen;
+                $written += t2p_write_pdf_stream_end($output);
+                $written += t2p_write_pdf_obj_end($output);
+                $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+                $written +=
+                  t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+                $written += t2p_write_pdf_stream_length( $streamlen, $output );
+                $written += t2p_write_pdf_obj_end($output);
+            }
+        }
+        else {
+            $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+            $written +=
+              t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+            $written += t2p_write_pdf_stream_dict_start($output);
+            $written += t2p_write_pdf_xobject_stream_dict( 0, $t2p, $output );
+            $written += t2p_write_pdf_stream_dict_end($output);
+            $written += t2p_write_pdf_stream_start($output);
+            my $streamlen = $written;
+            t2p_read_tiff_size( $t2p, $input );
+            $written += t2p_readwrite_pdf_image( $t2p, $input, $output );
+            t2p_write_advance_directory( $t2p, $output );
+            if ( $t2p->{t2p_error} != $T2P_ERR_OK ) { return 0 }
+            $streamlen = $written - $streamlen;
+            $written += t2p_write_pdf_stream_end($output);
+            $written += t2p_write_pdf_obj_end($output);
+            $t2p->{pdf_xrefoffsets}[ $t2p->{pdf_xrefcount}++ ] = $written;
+            $written +=
+              t2p_write_pdf_obj_start( $t2p->{pdf_xrefcount}, $output );
+            $written += t2p_write_pdf_stream_length( $streamlen, $output );
+            $written += t2p_write_pdf_obj_end($output);
+        }
+    }
+    $t2p->{pdf_startxref} = $written;
+    $written += t2p_write_pdf_xreftable( $t2p, $output );
+    $written += t2p_write_pdf_trailer( $t2p, $output );
+    t2p_disable($output);
+
+    return $written;
+}
+
 exit main();
