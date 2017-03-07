@@ -2275,6 +2275,69 @@ sub t2p_write_pdf_catalog {
     return length $buffer;
 }
 
+# This function writes the PDF Info structure to output.
+
+sub t2p_write_pdf_info {
+    my ( $t2p, $input, $output ) = @_;
+
+    my $buffer = '';
+    if ( not defined $t2p->{pdf_datetime} ) { t2p_pdf_tifftime( $t2p, $input ) }
+    if ( length $t2p->{pdf_datetime} > 0 ) {
+        $buffer .= "<< \n/CreationDate ";
+        $buffer .= $t2p->{pdf_datetime};
+        $buffer .= "<< \n/ModDate ";
+        $buffer .= $t2p->{pdf_datetime};
+    }
+    $buffer .= "\n/Producer ";
+    $buffer .= sprintf 'libtiff / tiff2pdf - %d\n', TIFFLIB_VERSION;
+    if ( defined $t2p->{pdf_creator} ) {
+        $buffer .= "/Creator $t2p->{pdf_creator}\n";
+    }
+    else {
+        my $info = $input->GetField(TIFFTAG_SOFTWARE);
+        if ( defined $info and length $info > 0 ) {
+            $buffer .= "/Creator $info\n";
+        }
+    }
+    if ( defined $t2p->{pdf_author} ) {
+        $buffer .= "/Author $t2p->{pdf_author}\n";
+    }
+    else {
+        my $info = $input->GetField(TIFFTAG_ARTIST);
+        if ( not defined $info or length $info > 0 ) {
+            $info = $input->GetField(TIFFTAG_COPYRIGHT);
+        }
+        if ( defined $info and length $info > 0 ) {
+            $buffer .= "/Author $info\n";
+        }
+    }
+    if ( defined $t2p->{pdf_title} ) {
+        $buffer .= "/Title $t2p->{pdf_title}\n";
+    }
+    else {
+        my $info = $input->GetField(TIFFTAG_DOCUMENTNAME);
+        if ( defined $info and length $info > 0 ) {
+            $buffer .= "/Title $info\n";
+        }
+    }
+    if ( defined $t2p->{pdf_subject} ) {
+        $buffer .= "/Subject $t2p->{pdf_subject}\n";
+    }
+    else {
+        my $info = $input->GetField(TIFFTAG_IMAGEDESCRIPTION);
+        if ( defined $info and length $info > 0 ) {
+            $buffer .= "/Subject $info\n";
+        }
+    }
+    if ( defined $t2p->{pdf_keywords} ) {
+        $buffer .= "/Keywords $t2p->{pdf_keywords}\n";
+    }
+    $buffer .= ">> \n";
+    print {$output} $buffer;
+
+    return length $buffer;
+}
+
 # This function writes a PDF to a file given a pointer to a TIFF.
 
 # The idea with using a TIFF* as output for a PDF file is that the file

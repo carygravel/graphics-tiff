@@ -13,6 +13,8 @@ Readonly my $MICRO => 1_000_000;
 our %EXPORT_TAGS = (
     'all' => [
         qw(
+          TIFFLIB_VERSION
+
           TIFFTAG_SUBFILETYPE
           FILETYPE_REDUCEDIMAGE
           FILETYPE_PAGE
@@ -76,6 +78,7 @@ our %EXPORT_TAGS = (
           FILLORDER_MSB2LSB
           FILLORDER_LSB2MSB
 
+          TIFFTAG_DOCUMENTNAME
           TIFFTAG_IMAGEDESCRIPTION
           TIFFTAG_STRIPOFFSETS
 
@@ -118,6 +121,10 @@ our %EXPORT_TAGS = (
           TIFFTAG_PAGENUMBER
 
           TIFFTAG_TRANSFERFUNCTION
+
+          TIFFTAG_SOFTWARE
+
+          TIFFTAG_ARTIST
 
           TIFFTAG_PREDICTOR
           PREDICTOR_NONE
@@ -166,6 +173,8 @@ our %EXPORT_TAGS = (
           TIFFTAG_REFERENCEBLACKWHITE
 
           TIFFTAG_OPIIMAGEID
+
+          TIFFTAG_COPYRIGHT
 
           TIFFTAG_EXIFIFD
 
