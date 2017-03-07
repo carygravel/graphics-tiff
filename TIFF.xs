@@ -224,6 +224,12 @@ tiff_ReadEXIFDirectory (tif, diroff)
 	        XPUSHs(sv_2mortal(newSViv(TIFFReadEXIFDirectory(tif, diroff))));
 
 void
+tiff_NumberOfDirectories (tif)
+                TIFF		*tif
+        PPCODE:
+	        XPUSHs(sv_2mortal(newSViv(TIFFNumberOfDirectories(tif))));
+
+void
 tiff_SetDirectory (tif, dirnum)
                 TIFF		*tif
                 uint16          dirnum;

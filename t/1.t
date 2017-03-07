@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 27;
+use Test::More tests => 28;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -23,6 +23,8 @@ SKIP: {
     is( $tif->ReadDirectory, 0, 'ReadDirectory' );
 
     is( $tif->ReadEXIFDirectory(0), 0, 'ReadEXIFDirectory' );
+
+    is( $tif->NumberOfDirectories, 1, 'NumberOfDirectories' );
 
     is( $tif->SetDirectory(0), 1, 'SetDirectory' );
 
@@ -71,5 +73,8 @@ SKIP: {
     unlink $filename;
 
     $tif->Close;
+
+#########################
+
     unlink 'test.tif';
 }
