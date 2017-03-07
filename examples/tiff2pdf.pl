@@ -2247,6 +2247,17 @@ sub t2p_write_pdf_obj_start {
     return length $buffer;
 }
 
+# This function writes the end of a PDF object to output.
+
+sub t2p_write_pdf_obj_end {
+    my ($output) = @_;
+
+    my $buffer = "endobj\n";
+    print {$output} $buffer;
+
+    return length $buffer;
+}
+
 # This function writes the PDF Catalog structure to output.
 
 sub t2p_write_pdf_catalog {
