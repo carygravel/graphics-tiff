@@ -2229,10 +2229,22 @@ sub t2p_write_pdf_header {
     my $buffer = sprintf( '%%PDF-%u.%u ',
         $t2p->{pdf_majorversion} & 0xff,
         $t2p->{pdf_minorversion} & 0xff );
-    my $written = print {$output} $buffer;
-    $written += print {$output} "\n%\342\343\317\323\n";
+    $buffer .= "\n%\342\343\317\323\n";
+    print {$output} $buffer;
 
-    return $written;
+    return length $buffer;
+}
+
+# This function writes the beginning of a PDF object to output.
+
+sub t2p_write_pdf_obj_start {
+    my ( $number, $output ) = @_;
+
+    my $buffer = sprintf '%lu', $number;
+    $buffer .= " 0 obj\n";
+    print {$output} $buffer;
+
+    return length $buffer;
 }
 
 # This function writes a PDF to a file given a pointer to a TIFF.
