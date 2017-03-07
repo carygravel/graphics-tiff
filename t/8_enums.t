@@ -1,4 +1,4 @@
-use Test::More tests => 148;
+use Test::More tests => 149;
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
@@ -116,6 +116,7 @@ is( TIFFTAG_PAGENUMBER, 297, "TIFFTAG_PAGENUMBER" );
 is( TIFFTAG_TRANSFERFUNCTION, 301, 'TIFFTAG_TRANSFERFUNCTION' );
 
 is( TIFFTAG_SOFTWARE, 305, 'TIFFTAG_SOFTWARE' );
+is( TIFFTAG_DATETIME, 306, 'TIFFTAG_DATETIME' );
 
 is( TIFFTAG_ARTIST, 315, 'TIFFTAG_ARTIST' );
 

@@ -4,6 +4,7 @@ use strict;
 use Graphics::TIFF ':all';
 use feature 'switch';
 no if $] >= 5.018, warnings => 'experimental::smartmatch';
+use English qw( -no_match_vars );
 
 use Readonly;
 Readonly my $PS_UNIT_SIZE => 72;
@@ -2336,6 +2337,51 @@ sub t2p_write_pdf_info {
     print {$output} $buffer;
 
     return length $buffer;
+}
+
+# This function fills a string of a T2P struct with the current time as a PDF
+# date string, it is called by t2p_pdf_tifftime.
+
+sub t2p_pdf_currenttime {
+    my ($t2p) = @_;
+
+    my $timenow = time;
+    if ( $timenow == -1 ) {
+        my $msg = sprintf "$TIFF2PDF_MODULE: Can't get the current time: %s",
+          $ERRNO;
+        warn "$msg\n";
+        $timenow = 0;
+    }
+
+    my @currenttime = localtime $timenow;
+    $t2p->{pdf_datetime} = sprintf "D:%.4d%.2d%.2d%.2d%.2d%.2d",
+      $currenttime[5] + 1900, $currenttime[4] + 1, $currenttime[3],
+      $currenttime[2], $currenttime[1], $currenttime[0];
+
+    return;
+}
+
+# This function fills a string of a T2P struct with the date and time of a
+# TIFF file if it exists or the current time as a PDF date string.
+
+sub t2p_pdf_tifftime {
+    my ( $t2p, $input ) = @_;
+
+    my $datetime = $input->GetField(TIFFTAG_DATETIME);
+    if ( defined $datetime and ( length $datetime >= 19 ) ) {
+        $t2p->{pdf_datetime} = 'D:'
+          . substr( $datetime, 0,  4 )
+          . substr( $datetime, 5,  2 )
+          . substr( $datetime, 8,  2 )
+          . substr( $datetime, 11, 2 )
+          . substr( $datetime, 14, 2 )
+          . substr( $datetime, 17, 2 );
+    }
+    else {
+        t2p_pdf_currenttime($t2p);
+    }
+
+    return;
 }
 
 # This function writes a PDF to a file given a pointer to a TIFF.
