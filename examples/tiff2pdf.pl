@@ -2414,6 +2414,89 @@ sub t2p_write_pdf_pages {
     return length $buffer;
 }
 
+# This function writes a PDF Page structure to output.
+
+sub t2p_write_pdf_page {
+    my ( $object, $t2p, $output ) = @_;
+
+    my $buffer = "<<\n/Type /Page \n/Parent ";
+    $buffer .= sprintf "%lu",  $t2p->{pdf_pages};
+    $buffer .= " 0 R \n";
+    $buffer .= "/MediaBox [";
+    $buffer .= sprintf "%.4f", $t2p->{pdf_mediabox}{x1};
+    $buffer .= " ";
+    $buffer .= sprintf "%.4f", $t2p->{pdf_mediabox}{y1};
+    $buffer .= " ";
+    $buffer .= sprintf "%.4f", $t2p->{pdf_mediabox}{x2};
+    $buffer .= " ";
+    $buffer .= sprintf "%.4f", $t2p->{pdf_mediabox}{y2};
+    $buffer .= "] \n";
+    $buffer .= "/Contents ";
+    $buffer .= sprintf "%lu", ( $object + 1 );
+    $buffer .= " 0 R \n";
+    $buffer .= "/Resources << \n";
+
+    if ( $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilecount} != 0 ) {
+        $buffer .= "/XObject <<\n";
+        for (
+            my $i = 0 ;
+            $i < $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilecount} ;
+            $i++
+          )
+        {
+            $buffer .= "/Im";
+            $buffer .= sprintf "%u", ( $t2p->{pdf_page} + 1 );
+            $buffer .= "_";
+            $buffer .= sprintf "%u", ( $i + 1 );
+            $buffer .= " ";
+            $buffer .= sprintf "%lu",
+              ( $object + 3 +
+                  ( 2 * $i ) +
+                  $t2p->{tiff_pages}[ $t2p->{pdf_page} ]{page_extra} );
+            $buffer .= " 0 R ";
+            if ( $i % 4 == 3 ) {
+                $buffer .= "\n";
+            }
+        }
+        $buffer .= ">>\n";
+    }
+    else {
+        $buffer .= "/XObject <<\n";
+        $buffer .= "/Im";
+        $buffer .= sprintf "%u", ( $t2p->{pdf_page} + 1 );
+        $buffer .= " ";
+        $buffer .= sprintf "%lu",
+          ( $object + 3 +
+              ( 2 * $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilecount} ) +
+              $t2p->{tiff_pages}[ $t2p->{pdf_page} ]{page_extra} );
+        $buffer .= " 0 R ";
+        $buffer .= ">>\n";
+    }
+    if ( $t2p->{tiff_transferfunctioncount} != 0 ) {
+        $buffer .= "/ExtGState <<";
+        $buffer .= "/GS1 ";
+        $buffer .= sprintf "%lu", ( $object + 3 );
+        $buffer .= " 0 R ";
+        $buffer .= ">> \n";
+    }
+    $buffer .= "/ProcSet [ ";
+    if (   $t2p->{pdf_colorspace} == $T2P_CS_BILEVEL
+        || $t2p->{pdf_colorspace} == $T2P_CS_GRAY )
+    {
+        $buffer .= "/ImageB ";
+    }
+    else {
+        $buffer .= "/ImageC ";
+        if ( $t2p->{pdf_colorspace} & $T2P_CS_PALETTE ) {
+            $buffer .= "/ImageI ";
+        }
+    }
+    $buffer .= "]\n>>\n>>\n";
+    print {$output} $buffer;
+
+    return length $buffer;
+}
+
 # This function composes the page size and image and tile locations on a page.
 
 sub t2p_compose_pdf_page {
