@@ -2650,6 +2650,73 @@ sub t2p_compose_pdf_page {
     return;
 }
 
+sub t2p_compose_pdf_page_orient {
+    my ( $boxp, $orientation ) = @_;
+
+    if ( $boxp->{x1} > $boxp->{x2} ) {
+        ( $boxp->{x1}, $boxp->{x2} ) = ( $boxp->{x2}, $boxp->{x1} );
+    }
+    if ( $boxp->{y1} > $boxp->{y2} ) {
+        ( $boxp->{y1}, $boxp->{y2} ) = ( $boxp->{y2}, $boxp->{y1} );
+    }
+    my @m1;
+    $boxp->{mat}[0] = $m1[0] = $boxp->{x2} - $boxp->{x1};
+    $boxp->{mat}[1] = $m1[1] = 0.0;
+    $boxp->{mat}[2] = $m1[2] = 0.0;
+    $boxp->{mat}[3] = $m1[3] = 0.0;
+    $boxp->{mat}[4] = $m1[4] = $boxp->{y2} - $boxp->{y1};
+    $boxp->{mat}[5] = $m1[5] = 0.0;
+    $boxp->{mat}[6] = $m1[6] = $boxp->{x1};
+    $boxp->{mat}[7] = $m1[7] = $boxp->{y1};
+    $boxp->{mat}[8] = $m1[8] = 1.0;
+    given ($orientation) {
+        when (2) {
+            $boxp->{mat}[0] = 0.0 - $m1[0];
+            $boxp->{mat}[6] += $m1[0];
+        }
+        when (3) {
+            $boxp->{mat}[0] = 0.0 - $m1[0];
+            $boxp->{mat}[4] = 0.0 - $m1[4];
+            $boxp->{mat}[6] += $m1[0];
+            $boxp->{mat}[7] += $m1[4];
+        }
+        when (4) {
+            $boxp->{mat}[4] = 0.0 - $m1[4];
+            $boxp->{mat}[7] += $m1[4];
+        }
+        when (5) {
+            $boxp->{mat}[0] = 0.0;
+            $boxp->{mat}[1] = 0.0 - $m1[0];
+            $boxp->{mat}[3] = 0.0 - $m1[4];
+            $boxp->{mat}[4] = 0.0;
+            $boxp->{mat}[6] += $m1[4];
+            $boxp->{mat}[7] += $m1[0];
+        }
+        when (6) {
+            $boxp->{mat}[0] = 0.0;
+            $boxp->{mat}[1] = 0.0 - $m1[0];
+            $boxp->{mat}[3] = $m1[4];
+            $boxp->{mat}[4] = 0.0;
+            $boxp->{mat}[7] += $m1[0];
+        }
+        when (7) {
+            $boxp->{mat}[0] = 0.0;
+            $boxp->{mat}[1] = $m1[0];
+            $boxp->{mat}[3] = $m1[4];
+            $boxp->{mat}[4] = 0.0;
+        }
+        when (8) {
+            $boxp->{mat}[0] = 0.0;
+            $boxp->{mat}[1] = $m1[0];
+            $boxp->{mat}[3] = 0.0 - $m1[4];
+            $boxp->{mat}[4] = 0.0;
+            $boxp->{mat}[6] += $m1[4];
+        }
+    }
+
+    return;
+}
+
 # This function writes a PDF to a file given a pointer to a TIFF.
 
 # The idea with using a TIFF* as output for a PDF file is that the file
