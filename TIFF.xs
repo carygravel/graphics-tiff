@@ -277,7 +277,8 @@ tiff_GetField (tif, tag)
                 uint32          ui32;
                 uint64          *aui;
                 float           f;
-                int             vector_length;
+                float           *af;
+                int             vector_length, nvals;
         PPCODE:
                 switch (tag) {
                     /* single uint16 */
@@ -323,10 +324,20 @@ tiff_GetField (tif, tag)
                     case TIFFTAG_STRIPOFFSETS:
                     case TIFFTAG_STRIPBYTECOUNTS:
                         if (TIFFGetField (tif, tag, &aui)) {
-                            int nstrips = TIFFNumberOfStrips(tif);
+                            nvals = TIFFNumberOfStrips(tif);
                             int i;
-			    for (i = 0; i < nstrips; ++i)
+			    for (i = 0; i < nvals; ++i)
                                 XPUSHs(sv_2mortal(newSViv(aui[i])));
+                        }
+                        break;
+
+                    /* array of float */
+                    case TIFFTAG_PRIMARYCHROMATICITIES:
+                        nvals = 6;
+                        if (TIFFGetField (tif, tag, &af)) {
+                            int i;
+			    for (i = 0; i < nvals; ++i)
+                                XPUSHs(sv_2mortal(newSVnv(af[i])));
                         }
                         break;
 

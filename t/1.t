@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 31;
+use Test::More tests => 32;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -42,6 +42,17 @@ SKIP: {
     @counts = $tif->GetField(TIFFTAG_STRIPBYTECOUNTS);
     is_deeply( \@counts, [ 8190, 1470 ], 'GetField array of uint64' );
     is( $tif->GetField(TIFFTAG_IMAGEWIDTH), 70, 'GetField uint32' );
+
+    @counts = $tif->GetField(TIFFTAG_PRIMARYCHROMATICITIES);
+    is_deeply(
+        \@counts,
+        [
+            0.639999985694885, 0.330000013113022,
+            0.300000011920929, 0.600000023841858,
+            0.150000005960464, 0.0599999986588955
+        ],
+        'GetField array of float'
+    );
 
     is( $tif->GetFieldDefaulted(TIFFTAG_FILLORDER),
         FILLORDER_MSB2LSB, 'GetFieldDefaulted uint16' );
