@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 32;
+use Test::More tests => 33;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -51,7 +51,14 @@ SKIP: {
             0.300000011920929, 0.600000023841858,
             0.150000005960464, 0.0599999986588955
         ],
-        'GetField array of float'
+        'GetField TIFFTAG_PRIMARYCHROMATICITIES (array of float)'
+    );
+
+    @counts = $tif->GetField(TIFFTAG_WHITEPOINT);
+    is_deeply(
+        \@counts,
+        [ 0.312700003385544, 0.328999996185303 ],
+        'GetField TIFFTAG_WHITEPOINT (array of float)'
     );
 
     is( $tif->GetFieldDefaulted(TIFFTAG_FILLORDER),

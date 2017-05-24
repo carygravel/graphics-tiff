@@ -332,8 +332,16 @@ tiff_GetField (tif, tag)
                         break;
 
                     /* array of float */
+                    case TIFFTAG_WHITEPOINT:
                     case TIFFTAG_PRIMARYCHROMATICITIES:
-                        nvals = 6;
+                        switch (tag) {
+                            case TIFFTAG_PRIMARYCHROMATICITIES:
+                                nvals = 6;
+                                break;
+                            /* TIFFTAG_WHITEPOINT */
+                            default:
+                                nvals = 2;
+                        }
                         if (TIFFGetField (tif, tag, &af)) {
                             int i;
 			    for (i = 0; i < nvals; ++i)
