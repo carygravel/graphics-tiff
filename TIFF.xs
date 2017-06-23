@@ -242,6 +242,12 @@ tiff_ReadDirectory (tif)
 	        XPUSHs(sv_2mortal(newSViv(TIFFReadDirectory(tif))));
 
 void
+tiff_WriteDirectory (tif)
+                TIFF		*tif;
+        PPCODE:
+	        XPUSHs(sv_2mortal(newSViv(TIFFWriteDirectory(tif))));
+
+void
 tiff_ReadEXIFDirectory (tif, diroff)
                 TIFF		*tif
                 toff_t          diroff;
@@ -428,20 +434,35 @@ tiff_GetFieldDefaulted (tif, tag)
                 }
 
 void
-tiff_SetField (tif, tag, v1, ...)
+tiff_SetField (tif, tag, ...)
                 TIFF            *tif
                 uint32          tag
-                uint32          v1
+	INIT:
+                uint16          ui16, ui16_2;
+                uint32          ui32;
+                float           f;
         PPCODE:
-                switch (items) {
-                        case 3: XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, v1))));
-                                break;
-                        case 4: XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, v1, ST(3)))));
-                                break;
-                        case 5: XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, v1, ST(3), ST(4)))));
-                                break;
-                        case 6: XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, v1, ST(3), ST(4), ST(5)))));
-                                break;
+                switch (tag) {
+
+                    /* single float */
+		    case TIFFTAG_XRESOLUTION:
+		    case TIFFTAG_YRESOLUTION:
+                        f = SvNV(ST(2));
+                        XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, f))));
+                        break;
+
+                    /* two uint16 */
+		    case TIFFTAG_PAGENUMBER:
+                        ui16 = SvIV(ST(2));
+                        ui16_2 = SvIV(ST(3));
+                        XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, ui16, ui16_2))));
+                        break;
+
+                    /* single uint32 */
+                    default:
+                        ui32 = SvIV(ST(2));
+                        XPUSHs(sv_2mortal(newSViv(TIFFSetField (tif, tag, ui32))));
+                        break;
                 }
 
 void
@@ -495,14 +516,27 @@ tiff_ReadEncodedStrip (tif, strip, size)
                 tmsize_t        size
 	INIT:
                 void            *buf;
-                tmsize_t        stripsize;
+                tmsize_t        stripsize, bufsize;
         PPCODE:
                 stripsize = TIFFStripSize(tif);
                 buf = (unsigned char *)_TIFFmalloc(stripsize);
-                if (TIFFReadEncodedStrip(tif, strip, buf, size)) {
-                    XPUSHs(sv_2mortal(newSVpvn(buf, stripsize)));
+                bufsize = TIFFReadEncodedStrip(tif, strip, buf, size);
+                if (bufsize > 0) {
+                    XPUSHs(sv_2mortal(newSVpvn(buf, bufsize)));
                 }
 		_TIFFfree(buf);
+
+void
+tiff_WriteEncodedStrip (tif, strip, data, size)
+                TIFF            *tif
+                uint32          strip
+                void*           data
+                tmsize_t        size
+	INIT:
+                tmsize_t        stripsize;
+        PPCODE:
+                stripsize = TIFFWriteEncodedStrip(tif, strip, data, size);
+                XPUSHs(sv_2mortal(newSViv(stripsize)));
 
 void
 tiff_ReadRawStrip (tif, strip, size)
@@ -511,12 +545,13 @@ tiff_ReadRawStrip (tif, strip, size)
                 tmsize_t        size
 	INIT:
                 void            *buf;
-                tmsize_t        stripsize;
+                tmsize_t        stripsize, bufsize;
         PPCODE:
                 stripsize = TIFFStripSize(tif);
                 buf = (unsigned char *)_TIFFmalloc(stripsize);
-                if (TIFFReadRawStrip(tif, strip, buf, size)) {
-                    XPUSHs(sv_2mortal(newSVpvn(buf, stripsize)));
+                bufsize = TIFFReadRawStrip(tif, strip, buf, size);
+                if (bufsize > 0) {
+                    XPUSHs(sv_2mortal(newSVpvn(buf, bufsize)));
                 }
 		_TIFFfree(buf);
 
@@ -529,12 +564,13 @@ tiff_ReadTile (tif, x, y, z, s)
                 uint16          s
 	INIT:
                 void            *buf;
-                tmsize_t        tilesize;
+                tmsize_t        tilesize, bufsize;
         PPCODE:
                 tilesize = TIFFTileSize(tif);
                 buf = (unsigned char *)_TIFFmalloc(tilesize);
-                if (TIFFReadTile(tif, buf, x, y, z, s)) {
-                    XPUSHs(sv_2mortal(newSVpvn(buf, tilesize)));
+                bufsize = TIFFReadTile(tif, buf, x, y, z, s);
+                if (bufsize > 0) {
+                    XPUSHs(sv_2mortal(newSVpvn(buf, bufsize)));
                 }
 		_TIFFfree(buf);
 

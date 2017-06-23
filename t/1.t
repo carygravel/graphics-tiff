@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 33;
+use Test::More tests => 35;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -12,7 +12,7 @@ my $version = Graphics::TIFF->get_version_scalar;
 isnt $version, undef, 'version';
 
 SKIP: {
-    skip 'libtiff 4.0.3 or better required', 29 unless $version >= 4.000003;
+    skip 'libtiff 4.0.3 or better required', 31 unless $version >= 4.000003;
 
     ok( Graphics::TIFF->IsCODECConfigured(COMPRESSION_DEFLATE),
         'IsCODECConfigured' );
@@ -84,22 +84,55 @@ SKIP: {
 
     is( $tif->ComputeStrip( 16, 0 ), 0, 'ComputeStrip' );
 
-    is( length( $tif->ReadEncodedStrip( 1, 20 ) ), 8190, 'ReadEncodedStrip' );
+    is( length( $tif->ReadEncodedStrip( 0, 8190 ) ),
+        8190, 'ReadEncodedStrip full strip' );
 
-    is( length( $tif->ReadRawStrip( 1, 20 ) ), 8190, 'ReadRawStrip' );
+    is( length( $tif->ReadEncodedStrip( 1, 8190 ) ),
+        1470, 'ReadEncodedStrip part strip' );
 
-    is( length( $tif->ReadTile( 0, 0, 0, 0 ) ), 8190, 'ReadTile' );
+    is( length( $tif->ReadRawStrip( 1, 20 ) ), 20, 'ReadRawStrip' );
+
+    is( length( $tif->ReadTile( 0, 0, 0, 0 ) ), undef, 'ReadTile' );
 
     my $filename = 'out.txt';
     open my $fh, '>', $filename;
     $tif->PrintDirectory( $fh, 0 );
+    $tif->Close;
     close $fh;
     is( -s $filename, 449, 'PrintDirectory' );
     unlink $filename;
 
+#########################
+
+    $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
+    my $out = Graphics::TIFF->Open( 'test2.tif', 'w' );
+    for my $tag (
+        ( TIFFTAG_IMAGEWIDTH, TIFFTAG_IMAGELENGTH,
+            TIFFTAG_SAMPLESPERPIXEL, TIFFTAG_BITSPERSAMPLE,
+            TIFFTAG_ORIENTATION,     TIFFTAG_PLANARCONFIG,
+            TIFFTAG_PAGENUMBER,      TIFFTAG_PHOTOMETRIC,
+            TIFFTAG_ROWSPERSTRIP,    TIFFTAG_FILLORDER,
+            TIFFTAG_RESOLUTIONUNIT,  TIFFTAG_XRESOLUTION,
+            TIFFTAG_YRESOLUTION
+        )
+      )
+    {
+        my @values = $tif->GetField($tag);
+        $out->SetField( $tag, @values );
+    }
+
+    my $stripsize = $tif->StripSize;
+    for my $stripnum ( 0 .. $tif->NumberOfStrips - 1 ) {
+        my $buffer = $tif->ReadEncodedStrip( $stripnum, $stripsize );
+        $out->WriteEncodedStrip( $stripnum, $buffer, length($buffer) );
+    }
+    $out->WriteDirectory;
     $tif->Close;
+    $out->Close;
+
+    is( `tiffcmp test.tif test2.tif`, '', 'tiffcmp' );
 
 #########################
 
-    unlink 'test.tif';
+    unlink 'test.tif', 'test2.tif';
 }

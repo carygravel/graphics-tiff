@@ -7,6 +7,7 @@ uint32			T_IV
 uint64			T_IV
 tmsize_t                T_IV
 toff_t                  T_IV
+void *                  T_PV
 
 
 INPUT
