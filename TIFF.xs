@@ -290,16 +290,17 @@ tiff_GetField (tif, tag)
                     /* single uint16 */
 		    case TIFFTAG_BITSPERSAMPLE:
 		    case TIFFTAG_COMPRESSION:
-		    case TIFFTAG_PHOTOMETRIC:
-		    case TIFFTAG_THRESHHOLDING:
+		    case TIFFTAG_EXTRASAMPLES:
 		    case TIFFTAG_FILLORDER:
-		    case TIFFTAG_ORIENTATION:
-		    case TIFFTAG_SAMPLESPERPIXEL:
-		    case TIFFTAG_MINSAMPLEVALUE:
+		    case TIFFTAG_MATTEING:
 		    case TIFFTAG_MAXSAMPLEVALUE:
+		    case TIFFTAG_MINSAMPLEVALUE:
+		    case TIFFTAG_ORIENTATION:
+		    case TIFFTAG_PHOTOMETRIC:
 		    case TIFFTAG_PLANARCONFIG:
 		    case TIFFTAG_RESOLUTIONUNIT:
-		    case TIFFTAG_MATTEING:
+		    case TIFFTAG_SAMPLESPERPIXEL:
+		    case TIFFTAG_THRESHHOLDING:
                         if (TIFFGetField (tif, tag, &ui16)) {
                             XPUSHs(sv_2mortal(newSViv(ui16)));
                         }
@@ -378,16 +379,17 @@ tiff_GetFieldDefaulted (tif, tag)
                     /* single uint16 */
 		    case TIFFTAG_BITSPERSAMPLE:
 		    case TIFFTAG_COMPRESSION:
-		    case TIFFTAG_PHOTOMETRIC:
-		    case TIFFTAG_THRESHHOLDING:
+		    case TIFFTAG_EXTRASAMPLES:
 		    case TIFFTAG_FILLORDER:
-		    case TIFFTAG_ORIENTATION:
-		    case TIFFTAG_SAMPLESPERPIXEL:
-		    case TIFFTAG_MINSAMPLEVALUE:
+		    case TIFFTAG_MATTEING:
 		    case TIFFTAG_MAXSAMPLEVALUE:
+		    case TIFFTAG_MINSAMPLEVALUE:
+		    case TIFFTAG_ORIENTATION:
+		    case TIFFTAG_PHOTOMETRIC:
 		    case TIFFTAG_PLANARCONFIG:
 		    case TIFFTAG_RESOLUTIONUNIT:
-		    case TIFFTAG_MATTEING:
+		    case TIFFTAG_SAMPLESPERPIXEL:
+		    case TIFFTAG_THRESHHOLDING:
                         if (TIFFGetFieldDefaulted (tif, tag, &ui16)) {
                             XPUSHs(sv_2mortal(newSViv(ui16)));
                         }

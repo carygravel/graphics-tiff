@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 35;
+use Test::More tests => 36;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -131,6 +131,16 @@ SKIP: {
     $out->Close;
 
     is( `tiffcmp test.tif test2.tif`, '', 'tiffcmp' );
+
+#########################
+
+    system("convert -density 72 -alpha on rose: test.tif");
+    my $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
+
+    is( $tif->GetField(TIFFTAG_EXTRASAMPLES),
+        EXTRASAMPLE_ASSOCALPHA, 'GetField TIFFTAG_EXTRASAMPLES' );
+
+    $tif->Close;
 
 #########################
 
