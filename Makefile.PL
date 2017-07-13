@@ -34,8 +34,10 @@ WriteMakefile(
     BUILD_REQUIRES => {
         Test::More => 0,
     },
-    clean => { FILES    => '$(SOURCE_TIDY)' },
-    dist  => { COMPRESS => 'xz -9', SUFFIX => '.xz', },
+    clean => { FILES => '$(SOURCE_TIDY)' },
+
+    # CPAN does not recognise .xz encoded files
+    #    dist  => { COMPRESS => 'xz -9', SUFFIX => '.xz', },
     (
         $] >= 5.005
         ?    ## Add these new keywords supported since 5.005
