@@ -134,6 +134,7 @@ sub main {
     $t2p{pdf_xrefcount}         = 3;       # Catalog, Info, Pages
     $t2p{pdf_centimeters}       = 0;
     $t2p{pdf_overridepagesize}  = 0;
+    $t2p{pdf_colorspace_invert} = 0;
 
     while ( my $c = getopt('o:q:u:x:y:w:l:r:p:e:c:a:t:s:k:jzndifbhF') ) {
         given ($c) {
@@ -1652,7 +1653,7 @@ sub t2p_readwrite_pdf_image {
         $tif->Close;
         $tif = Graphics::TIFF->Open( $temp, 'r' );
         $buffer = '';
-        for my $i ( 0 .. $stripcount - 1 ) {
+        for my $i ( 0 .. $tif->NumberOfStrips() - 1 ) {
             my $stripbuffer = $tif->ReadEncodedStrip( $i, $stripsize );
             if ( length($stripbuffer) == 0 ) {
                 my $msg =
@@ -3684,7 +3685,6 @@ sub t2p_write_pdf {
     $t2p->{pdf_startxref} = $written;
     $written += t2p_write_pdf_xreftable( $t2p, $output );
     $written += t2p_write_pdf_trailer( $t2p, $output );
-    $output->{outputdisable} = 1;
 
     return $written;
 }
