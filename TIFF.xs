@@ -279,7 +279,7 @@ tiff_GetField (tif, tag)
                 TIFF            *tif
                 uint32          tag
 	INIT:
-                uint16          ui16, ui16_2;
+                uint16          ui16, ui16_2, *aui16;
                 uint32          ui32;
                 uint64          *aui;
                 float           f;
@@ -290,7 +290,6 @@ tiff_GetField (tif, tag)
                     /* single uint16 */
 		    case TIFFTAG_BITSPERSAMPLE:
 		    case TIFFTAG_COMPRESSION:
-		    case TIFFTAG_EXTRASAMPLES:
 		    case TIFFTAG_FILLORDER:
 		    case TIFFTAG_MATTEING:
 		    case TIFFTAG_MAXSAMPLEVALUE:
@@ -325,12 +324,21 @@ tiff_GetField (tif, tag)
                         }
                         break;
 
+                    /* array of uint16 */
+		    case TIFFTAG_EXTRASAMPLES:
+                        if (TIFFGetField (tif, tag, &ui16, &aui16)) {
+                            int i;
+			    for (i = 0; i < ui16; ++i)
+                                XPUSHs(sv_2mortal(newSViv(aui16[i])));
+                        }
+                        break;
+
                     /* array of uint64 */
                     case TIFFTAG_TILEOFFSETS:
                     case TIFFTAG_TILEBYTECOUNTS:
                     case TIFFTAG_STRIPOFFSETS:
                     case TIFFTAG_STRIPBYTECOUNTS:
-                        if (TIFFGetField (tif, tag, &aui)) {
+                         if (TIFFGetField (tif, tag, &aui)) {
                             nvals = TIFFNumberOfStrips(tif);
                             int i;
 			    for (i = 0; i < nvals; ++i)
