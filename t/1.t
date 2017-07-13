@@ -135,7 +135,7 @@ SKIP: {
 #########################
 
     system("convert -density 72 -alpha on rose: test.tif");
-    my $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
+    $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
 
     is( $tif->GetField(TIFFTAG_EXTRASAMPLES),
         EXTRASAMPLE_ASSOCALPHA, 'GetField TIFFTAG_EXTRASAMPLES' );
