@@ -1,5 +1,8 @@
 Revision history for Perl extension Graphics::TIFF.
 
+2   Fri, 14 Jul 2017 19:30 +0200
+	- fix GetFieldDefaulted(TIFFTAG_EXTRASAMPLES)
+
 1   Thu, 13 Jul 2017 19:30 +0200
 	- original version; created by h2xs 1.23 with options
 		-A -n Sane

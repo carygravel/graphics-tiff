@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 36;
+use Test::More tests => 37;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -140,6 +140,10 @@ SKIP: {
     my @values = $tif->GetField(TIFFTAG_EXTRASAMPLES);
     is_deeply( \@values, [EXTRASAMPLE_UNASSALPHA],
         'GetField TIFFTAG_EXTRASAMPLES' );
+
+    @values = $tif->GetFieldDefaulted(TIFFTAG_EXTRASAMPLES);
+    is_deeply( \@values, [EXTRASAMPLE_UNASSALPHA],
+        'GetFieldDefaulted TIFFTAG_EXTRASAMPLES' );
 
     $tif->Close;
 

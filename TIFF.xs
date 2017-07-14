@@ -324,7 +324,7 @@ tiff_GetField (tif, tag)
                         }
                         break;
 
-                    /* array of uint16 */
+                    /* count + array of uint16 */
 		    case TIFFTAG_EXTRASAMPLES:
                         if (TIFFGetField (tif, tag, &ui16, &aui16)) {
                             int i;
@@ -377,7 +377,7 @@ tiff_GetFieldDefaulted (tif, tag)
                 TIFF            *tif
                 uint32          tag
 	INIT:
-                uint16          ui16, ui16_2;
+                uint16          ui16, ui16_2, *aui16;
                 uint32          ui32;
                 uint64          *aui;
                 float           f;
@@ -387,7 +387,6 @@ tiff_GetFieldDefaulted (tif, tag)
                     /* single uint16 */
 		    case TIFFTAG_BITSPERSAMPLE:
 		    case TIFFTAG_COMPRESSION:
-		    case TIFFTAG_EXTRASAMPLES:
 		    case TIFFTAG_FILLORDER:
 		    case TIFFTAG_MATTEING:
 		    case TIFFTAG_MAXSAMPLEVALUE:
@@ -419,6 +418,15 @@ tiff_GetFieldDefaulted (tif, tag)
                         if (TIFFGetFieldDefaulted (tif, tag, &ui16, &ui16_2)) {
                             XPUSHs(sv_2mortal(newSViv(ui16)));
                             XPUSHs(sv_2mortal(newSViv(ui16_2)));
+                        }
+                        break;
+
+                    /* count + array of uint16 */
+		    case TIFFTAG_EXTRASAMPLES:
+                        if (TIFFGetFieldDefaulted (tif, tag, &ui16, &aui16)) {
+                            int i;
+			    for (i = 0; i < ui16; ++i)
+                                XPUSHs(sv_2mortal(newSViv(aui16[i])));
                         }
                         break;
 
