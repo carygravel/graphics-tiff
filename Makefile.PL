@@ -1,7 +1,10 @@
+use strict;
+use warnings;
 use 5.008;
 use ExtUtils::MakeMaker;
 use ExtUtils::Depends;
 use ExtUtils::PkgConfig;
+use English;
 
 # minimum required version of dependancies we need to build
 our %build_reqs = ( 'libtiff' => '4.0.3', );
@@ -13,6 +16,7 @@ our %runtime_reqs = ( 'libtiff' => '4.0.3', );
 # the pkg-config files ship with libtiff.
 my $lib = '-ltiff';
 my $inc = '-I. ';
+my %pkgcfg;
 if (
     eval {
         %pkgcfg =
@@ -28,13 +32,15 @@ if (
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 WriteMakefile(
-    NAME           => 'Graphics::TIFF',
-    VERSION_FROM   => 'lib/Graphics/TIFF.pm',    # finds $VERSION
-    PREREQ_PM      => { Readonly => 0 },         # e.g., Module::Name => 1.1
-    BUILD_REQUIRES => {
-        Test::More => 0,
+    NAME               => 'Graphics::TIFF',
+    VERSION_FROM       => 'lib/Graphics/TIFF.pm',    # finds $VERSION
+    PREREQ_PM          => { Readonly => 0 },         # e.g., Module::Name => 1.1
+    CONFIGURE_REQUIRES => {
+        'ExtUtils::Depends'   => 0,
+        'ExtUtils::PkgConfig' => 0
     },
-    clean => { FILES => '$(SOURCE_TIDY)' },
+    TEST_REQUIRES => { 'Test::More' => 0 },
+    clean         => { FILES        => '$(SOURCE_TIDY)' },
 
     # CPAN does not recognise .xz encoded files
     #    dist  => { COMPRESS => 'xz -9', SUFFIX => '.xz', },
@@ -56,7 +62,11 @@ WriteMakefile(
 );
 
 sub MY::postamble {
-    my $postamble = <<'END';
+
+    # GNU Make extensions that BSD make doesn't like.
+    # Author-only stuff, so comment out for non-Linux.
+    if ( $OSNAME ne 'linux' ) { return }
+    return <<'END';
 SHELL = bash
 DEB_BUILD_ROOT = /var/tmp/$(NAME)-$(VERSION)
 MANIFEST = $(shell cat MANIFEST)
@@ -81,5 +91,4 @@ tidy : MANIFEST $(SOURCE_TIDY)
 %.tdy : %
 	perltidy $* && if ! diff -q $@ $* > /dev/null; then cp $@ $*; fi
 END
-    $postamble;
 }

@@ -4,6 +4,7 @@ Revision history for Perl extension Graphics::TIFF.
 	- fix GetFieldDefaulted(TIFFTAG_EXTRASAMPLES)
         - use $EXECUTABLE_NAME in tests to fix RT 122470
         - + Readonly to PREREQ_PM in Makefile.PL
+        - Moved Test::More in BUILD_REQUIRES -> TEST_REQUIRES
 
 1   Thu, 13 Jul 2017 19:30 +0200
 	- original version; created by h2xs 1.23 with options
