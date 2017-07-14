@@ -30,7 +30,7 @@ if (
 WriteMakefile(
     NAME           => 'Graphics::TIFF',
     VERSION_FROM   => 'lib/Graphics/TIFF.pm',    # finds $VERSION
-    PREREQ_PM      => {},                        # e.g., Module::Name => 1.1
+    PREREQ_PM      => { Readonly => 0 },         # e.g., Module::Name => 1.1
     BUILD_REQUIRES => {
         Test::More => 0,
     },
