@@ -1,11 +1,13 @@
-use Test::More tests => 15;
 use warnings;
 use strict;
+use English;
+use Test::More tests => 15;
 
 #########################
 
 system('convert rose: rose: test.tif');
-my $cmd = 'PERL5LIB="blib:blib/arch:lib:$PERL5LIB" perl examples/tiffinfo.pl';
+my $cmd = 'PERL5LIB="blib:blib/arch:lib:$PERL5LIB" '
+  . "$EXECUTABLE_NAME examples/tiffinfo.pl";
 
 is( `$cmd test.tif`, `tiffinfo test.tif`, 'basic multi-directory' );
 

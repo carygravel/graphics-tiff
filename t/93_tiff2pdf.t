@@ -1,12 +1,14 @@
-use Test::More tests => 4;
 use warnings;
 use strict;
+use English;
+use Test::More tests => 4;
 
 #########################
 
-my $cmd = 'PERL5LIB="blib:blib/arch:lib:$PERL5LIB" perl examples/tiff2pdf.pl';
-my $tif = 'test.tif';
-my $pdf = 'C.pdf';
+my $cmd = 'PERL5LIB="blib:blib/arch:lib:$PERL5LIB" '
+  . "$EXECUTABLE_NAME examples/tiff2pdf.pl";
+my $tif            = 'test.tif';
+my $pdf            = 'C.pdf';
 my $compressed_tif = 'comp.tif';
 my $make_reproducible =
 'grep --binary-files=text -v "/ID" | grep --binary-files=text -v "/CreationDate" | grep --binary-files=text -v "/ModDate" | grep --binary-files=text -v "/Producer"';
