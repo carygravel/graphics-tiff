@@ -1,9 +1,17 @@
 use warnings;
 use strict;
 use English;
-use Test::More tests => 15;
+use Test::More;
 
 #########################
+
+if ( system("which tiffinfo > /dev/null 2> /dev/null") == 0 ) {
+    plan tests => 15;
+}
+else {
+    plan skip_all => 'tiffinfo not installed';
+    exit;
+}
 
 system('convert rose: rose: test.tif');
 my $cmd = 'PERL5LIB="blib:blib/arch:lib:$PERL5LIB" '

@@ -1,9 +1,17 @@
 use warnings;
 use strict;
 use English;
-use Test::More tests => 4;
+use Test::More;
 
 #########################
+
+if ( system("which tiff2pdf > /dev/null 2> /dev/null") == 0 ) {
+    plan tests => 4;
+}
+else {
+    plan skip_all => 'tiff2pdf not installed';
+    exit;
+}
 
 my $cmd = 'PERL5LIB="blib:blib/arch:lib:$PERL5LIB" '
   . "$EXECUTABLE_NAME examples/tiff2pdf.pl";
