@@ -293,7 +293,12 @@ sub getopt {
             if ( defined $1 ) { $optarg = $ARGV[ $optind++ ] }
         }
         else {
-            warn "$TIFF2PDF_MODULE: invalid option -- $c\n";
+            if ( $OSNAME eq 'freebsd' ) {
+                warn "$TIFF2PDF_MODULE: illegal option -- $c\n";
+            }
+            else {
+                warn "$TIFF2PDF_MODULE: invalid option -- $c\n";
+            }
             usage();
         }
     }

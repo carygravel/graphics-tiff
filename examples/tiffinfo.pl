@@ -4,6 +4,7 @@ use strict;
 use Graphics::TIFF ':all';
 use feature 'switch';
 no if $] >= 5.018, warnings => 'experimental::smartmatch';
+use English qw( -no_match_vars );
 use Readonly;
 Readonly my $EXIT_ERROR => -1;
 
@@ -90,7 +91,12 @@ sub getopt {
             if ( defined $1 ) { $optarg = $ARGV[ $optind++ ] }
         }
         else {
-            warn "tiffinfo: invalid option -- $c\n";
+            if ( $OSNAME eq 'freebsd' ) {
+                warn "tiffinfo: illegal option -- $c\n";
+            }
+            else {
+                warn "tiffinfo: invalid option -- $c\n";
+            }
             usage();
         }
     }
