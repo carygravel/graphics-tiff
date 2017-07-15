@@ -1,7 +1,8 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 37;
+use Test::More tests => 43;
+use Test::Deep;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -45,22 +46,28 @@ is_deeply( \@counts, [ 8190, 1470 ], 'GetField array of uint64' );
 is( $tif->GetField(TIFFTAG_IMAGEWIDTH), 70, 'GetField uint32' );
 
 @counts = $tif->GetField(TIFFTAG_PRIMARYCHROMATICITIES);
-is_deeply(
-    \@counts,
-    [
-        0.639999985694885, 0.330000013113022,
-        0.300000011920929, 0.600000023841858,
-        0.150000005960464, 0.0599999986588955
-    ],
-    'GetField TIFFTAG_PRIMARYCHROMATICITIES (array of float)'
+my @expected = (
+    0.639999985694885, 0.330000013113022,
+    0.300000011920929, 0.600000023841858,
+    0.150000005960464, 0.0599999986588955
 );
+for my $i ( 0 .. $#expected ) {
+    cmp_deeply(
+        $counts[$i],
+        num( $expected[$i], 0.0001 ),
+        'GetField TIFFTAG_PRIMARYCHROMATICITIES (array of float)'
+    );
+}
 
 @counts = $tif->GetField(TIFFTAG_WHITEPOINT);
-is_deeply(
-    \@counts,
-    [ 0.312700003385544, 0.328999996185303 ],
-    'GetField TIFFTAG_WHITEPOINT (array of float)'
-);
+@expected = ( 0.312700003385544, 0.328999996185303 );
+for my $i ( 0 .. $#expected ) {
+    cmp_deeply(
+        $counts[$i],
+        num( $expected[$i], 0.0001 ),
+        'GetField TIFFTAG_WHITEPOINT (array of float)'
+    );
+}
 
 is( $tif->GetFieldDefaulted(TIFFTAG_FILLORDER),
     FILLORDER_MSB2LSB, 'GetFieldDefaulted uint16' );

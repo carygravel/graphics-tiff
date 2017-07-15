@@ -3,6 +3,8 @@ Revision history for Perl extension Graphics::TIFF.
 3   Sat, 15 Jul 2017 11:00 +0200
 	- Skip tests in 1.t, 92_tiffinfo.t & 93_tiff2pdf.t if tiffcmp, tiffinfo
           & tiff2pdf not installed to fix RT 122486
+        - use Test::Deeply::num to fix test failures due to rounding in 1.t and
+          fix RT 122488
 
 2   Fri, 14 Jul 2017 19:30 +0200
 	- fix GetFieldDefaulted(TIFFTAG_EXTRASAMPLES)
