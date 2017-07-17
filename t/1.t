@@ -99,7 +99,7 @@ is( length( $tif->ReadEncodedStrip( 1, 8190 ) ),
 
 is( length( $tif->ReadRawStrip( 1, 20 ) ), 20, 'ReadRawStrip' );
 
-is( length( $tif->ReadTile( 0, 0, 0, 0 ) ), undef, 'ReadTile' );
+is( $tif->ReadTile( 0, 0, 0, 0 ), undef, 'ReadTile' );
 
 my $filename = 'out.txt';
 open my $fh, '>', $filename;
