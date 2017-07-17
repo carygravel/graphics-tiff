@@ -39,8 +39,12 @@ WriteMakefile(
         'ExtUtils::Depends'   => 0,
         'ExtUtils::PkgConfig' => 0
     },
-    TEST_REQUIRES =>
-      { 'Test::More' => 0, 'Test::Requires' => 0, 'Test::Deep' => 0 },
+    TEST_REQUIRES => {
+        'Test::More'     => 0,
+        'Test::Requires' => 0,
+        'Test::Deep'     => 0,
+        'Image::Magick'  => 0,
+    },
     clean => { FILES => '$(SOURCE_TIDY)' },
 
     # CPAN does not recognise .xz encoded files

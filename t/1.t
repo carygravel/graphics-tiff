@@ -3,6 +3,7 @@ use strict;
 use Graphics::TIFF ':all';
 use Test::More tests => 43;
 use Test::Deep;
+use Image::Magick;
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -20,7 +21,10 @@ if ( $version < 4.000003 ) {
 ok( Graphics::TIFF->IsCODECConfigured(COMPRESSION_DEFLATE),
     'IsCODECConfigured' );
 
-system("convert -density 72 rose: test.tif");
+my $image = Image::Magick->new;
+$image->Read('rose:');
+$image->Set( density => '72x72' );
+$image->Write('test.tif');
 
 my $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
 is( $tif->FileName, 'test.tif', 'FileName' );
@@ -146,7 +150,10 @@ SKIP: {
 
 #########################
 
-system("convert -density 72 -alpha on rose: test.tif");
+$image = Image::Magick->new;
+$image->Read('rose:');
+$image->Set( density => '72x72', alpha => 'Set' );
+$image->Write('test.tif');
 $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
 
 my @values = $tif->GetField(TIFFTAG_EXTRASAMPLES);

@@ -5,6 +5,8 @@ Revision history for Perl extension Graphics::TIFF.
         - skip 92_tiffinfo.t & 93_tiff2pdf.t if we don't have Perl 5.10, adding
           Test::Requires to TEST_REQUIRES
         - use Pod::Readme to build README from POD
+        - use perlmagick to build test images and thus fix test failures from
+          smokers without Imagemagick
 
 3   Sat, 15 Jul 2017 11:00 +0200
 	- Skip tests in 1.t, 92_tiffinfo.t & 93_tiff2pdf.t if tiffcmp, tiffinfo

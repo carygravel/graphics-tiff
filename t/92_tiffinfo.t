@@ -3,6 +3,7 @@ use strict;
 use English;
 use Test::More;
 use Test::Requires qw( v5.10 );
+use Image::Magick;
 
 #########################
 
@@ -14,7 +15,10 @@ else {
     exit;
 }
 
-system('convert rose: rose: test.tif');
+my $image = Image::Magick->new;
+$image->Read( 'rose:', 'rose:' );
+$image->Set( density => '72x72' );
+$image->Write('test.tif');
 my $cmd = 'PERL5LIB="blib:blib/arch:lib:$PERL5LIB" '
   . "$EXECUTABLE_NAME examples/tiffinfo.pl";
 
@@ -22,7 +26,10 @@ is( `$cmd test.tif`, `tiffinfo test.tif`, 'basic multi-directory' );
 
 is( `$cmd -2 test.tif`, `tiffinfo -2 test.tif`, 'dirnum' );
 
-system('convert rose: test.tif');
+$image = Image::Magick->new;
+$image->Read('rose:');
+$image->Set( density => '72x72' );
+$image->Write('test.tif');
 
 is( `$cmd -d test.tif`, `tiffinfo -d test.tif`, '-d' );
 

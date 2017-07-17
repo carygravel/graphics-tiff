@@ -3,6 +3,7 @@ use strict;
 use English;
 use Test::More;
 use Test::Requires qw( v5.10 );
+use Image::Magick;
 
 #########################
 
@@ -29,7 +30,10 @@ is( `$cmd -? $tif 2>&1`, $expected, '-?' );
 
 #########################
 
-system("convert -density 72 rose: $tif");
+my $image = Image::Magick->new;
+$image->Read('rose:');
+$image->Set( density => '72x72' );
+$image->Write('test.tif');
 system("tiff2pdf -d -o $pdf $tif");
 
 $expected = `cat $pdf | $make_reproducible | hexdump`;
