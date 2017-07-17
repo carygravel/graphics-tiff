@@ -13,10 +13,7 @@ SKIP: {
             $git = `git ls-tree --name-status -r HEAD | egrep -v '^\.(git|be)'`;
         }
       );
-
-    my $manifest = `cat MANIFEST`;
-
-    ok( $git eq $manifest, 'MANIFEST up to date' );
+    is( $git . "README\n", `cat MANIFEST`, 'MANIFEST up to date' );
 }
 
 local $INPUT_RECORD_SEPARATOR = undef;

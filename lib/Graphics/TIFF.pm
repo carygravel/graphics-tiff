@@ -271,6 +271,8 @@ The following snippet can be used to read the image data from a TIFF:
 The Graphics::TIFF module allows a Perl developer to access TIFF images.
 Find out more about libtiff at L<http://www.libtiff.org>.
 
+=for readme stop
+
 =head1 SUBROUTINES/METHODS
 
 =head2 Graphics::TIFF->get_version
@@ -665,6 +667,8 @@ TIFFPRINT_COLORMAP
 TIFFPRINT_JPEGQTABLES
 TIFFPRINT_JPEGACTABLES
 TIFFPRINT_JPEGDCTABLES
+
+=for readme continue
 
 =head1 DIAGNOSTICS
 

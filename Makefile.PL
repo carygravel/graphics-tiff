@@ -69,23 +69,18 @@ sub MY::postamble {
     if ( $OSNAME ne 'linux' ) { return }
     return <<'END';
 SHELL = bash
-DEB_BUILD_ROOT = /var/tmp/$(NAME)-$(VERSION)
 MANIFEST = $(shell cat MANIFEST)
 SOURCE = $(filter bin/% examples/% %.pm %.PL %.pl %.t,$(MANIFEST))
 SOURCE_TIDY = $(foreach file,$(SOURCE),$(file).tdy)
 
-debdist : tardist
-	$(RM_RF) /tmp/$(NAME)
-	$(MKPATH) /tmp/$(NAME)
-	cp $(NAME)-$(VERSION).tar.xz /tmp/$(NAME)/$(NAME)_$(VERSION).orig.tar.xz
-	cd /tmp/$(NAME) && tar xvfJ $(NAME)_$(VERSION).orig.tar.xz
-	cd /tmp/$(NAME)/$(NAME)-$(VERSION) && debuild
-	$(CP) /tmp/$(NAME)/$(NAME)_$(VERSION)*_all.deb \
-              /tmp/$(NAME)/$(NAME)_$(VERSION)*.dsc \
-              /tmp/$(NAME)/$(NAME)_$(VERSION).orig.tar.xz .
-
 MANIFEST : $(SOURCE)
 	git ls-files | egrep -v '^\.(git|be)' > $@
+	echo README >> $@
+
+tardist : README
+
+README : lib/Graphics/TIFF.pm
+	pod2readme $< $@
 
 tidy : MANIFEST $(SOURCE_TIDY)
 

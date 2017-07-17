@@ -4,6 +4,7 @@ Revision history for Perl extension Graphics::TIFF.
         - rewrite test in 1.t to fix failure with older Perls
         - skip 92_tiffinfo.t & 93_tiff2pdf.t if we don't have Perl 5.10, adding
           Test::Requires to TEST_REQUIRES
+        - use Pod::Readme to build README from POD
 
 3   Sat, 15 Jul 2017 11:00 +0200
 	- Skip tests in 1.t, 92_tiffinfo.t & 93_tiff2pdf.t if tiffcmp, tiffinfo
@@ -21,4 +22,4 @@ Revision history for Perl extension Graphics::TIFF.
 
 1   Thu, 13 Jul 2017 19:30 +0200
 	- original version; created by h2xs 1.23 with options
-		-A -n Sane
+		-A -n Graphics::TIFF
