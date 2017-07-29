@@ -20,7 +20,7 @@ my %pkgcfg;
 if (
     eval {
         %pkgcfg =
-          ExtUtils::PkgConfig->find( 'libtiff >= ' . $build_reqs{libtiff} );
+          ExtUtils::PkgConfig->find( 'libtiff-4 >= ' . $build_reqs{libtiff} );
     }
   )
 {
