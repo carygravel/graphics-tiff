@@ -43,7 +43,6 @@ WriteMakefile(
         'Test::More'     => 0,
         'Test::Requires' => 0,
         'Test::Deep'     => 0,
-        'Image::Magick'  => 0,
     },
     clean => { FILES => '$(SOURCE_TIDY)' },
 
