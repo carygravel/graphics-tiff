@@ -1,5 +1,9 @@
 Revision history for Perl extension Graphics::TIFF.
 
+5   Sat, 29 Jul 2017 19:30 +0200
+        - correct pkgconfig identifier. Closes RT 122628.
+          Thanks to Petr Pisar for the patch.
+
 4   Mon, 17 Jul 2017 19:30 +0200
         - rewrite test in 1.t to fix failure with older Perls
         - skip 92_tiffinfo.t & 93_tiff2pdf.t if we don't have Perl 5.10, adding
