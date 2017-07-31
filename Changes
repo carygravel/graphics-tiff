@@ -4,6 +4,7 @@ Revision history for Perl extension Graphics::TIFF.
         - correct pkgconfig identifier. Closes RT 122628.
           Thanks to Petr Pisar for the patch.
         - don't depend on Image::Magick and skip tests if not installed
+        - + tests with no dependencies
 
 4   Mon, 17 Jul 2017 19:30 +0200
         - rewrite test in 1.t to fix failure with older Perls
