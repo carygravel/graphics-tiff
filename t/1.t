@@ -22,7 +22,7 @@ ok( Graphics::TIFF->IsCODECConfigured(COMPRESSION_DEFLATE),
 
 eval "use Image::Magick";
 SKIP: {
-    skip 'Image::Magick not installed', 22 if $@;
+    skip 'Image::Magick not installed', 36 if $@;
 
     my $image = Image::Magick->new;
     $image->Read('rose:');
@@ -123,7 +123,7 @@ SKIP: {
 
 eval "use Image::Magick";
 SKIP: {
-    skip 'Image::Magick or tiffcmp not installed', 15
+    skip 'Image::Magick or tiffcmp not installed', 1
       if ( $@ or system("which tiffinfo > /dev/null 2> /dev/null") != 0 );
 
     my $tif = Graphics::TIFF->Open( 'test.tif',  'r' );
