@@ -152,7 +152,7 @@ sub main {
             }
             when ('e') {
                 if ( not defined $optarg ) {
-                    $t2p{pdf_datetime} = '';
+                    $t2p{pdf_datetime} = q{};
                 }
                 else {
                     $t2p{pdf_datetime} = "D:$optarg";
@@ -261,7 +261,7 @@ sub main {
           "$TIFF2PDF_MODULE: Can't open output file $outfilename for writing\n";
     }
     else {
-        $outfilename = '-';
+        $outfilename = q{-};
         $output      = *STDOUT;
     }
 
@@ -1289,7 +1289,7 @@ sub t2p_readwrite_pdf_image {
     my ( $t2p, $input, $output ) = @_;
 
     my $written         = 0;
-    my $buffer          = '';
+    my $buffer          = q{};
     my $samplebuffer    = 0;
     my $read            = 0;
     my $i               = 0;
@@ -1640,7 +1640,7 @@ sub t2p_readwrite_pdf_image {
     {
         $bufferoffset =
           $tif->WriteEncodedStrip( 0, $buffer, $stripsize * $stripcount );
-        $buffer = '';
+        $buffer = q{};
         for my $i ( 0 .. $stripcount - 1 ) {
             my $stripbuffer = $tif->ReadEncodedStrip( $i, $stripsize );
             if ( length($stripbuffer) == 0 ) {
@@ -1659,7 +1659,7 @@ sub t2p_readwrite_pdf_image {
           $tif->WriteEncodedStrip( 0, $buffer, $t2p->{tiff_datasize} );
         $tif->Close;
         $tif    = Graphics::TIFF->Open( $temp, 'r' );
-        $buffer = '';
+        $buffer = q{};
         for my $i ( 0 .. $tif->NumberOfStrips() - 1 ) {
             my $stripbuffer = $tif->ReadEncodedStrip( $i, $stripsize );
             if ( length($stripbuffer) == 0 ) {
@@ -2167,7 +2167,7 @@ sub t2p_process_ojpeg_tables {
         $ojpegdata .= chr 0xff;
         $ojpegdata .= chr 0xc4;
         my $offset_ms_l = length $ojpegdata;
-        $ojpegdata .= '..';               #placeholders to be filled below
+        $ojpegdata .= q{..};              #placeholders to be filled below
         $ojpegdata .= chr $dest & 0x0f;
         $ojpegdata .= substr $dc, $offset_table, 16;
         $code_count = 0;
@@ -2188,7 +2188,7 @@ sub t2p_process_ojpeg_tables {
             $ojpegdata .= chr 0xff;
             $ojpegdata .= chr 0xc4;
             my $offset_ms_l = length $ojpegdata;
-            $ojpegdata .= '..';               #placeholders to be filled below
+            $ojpegdata .= q{..};              #placeholders to be filled below
             $ojpegdata .= chr 0x10;
             $ojpegdata .= chr $dest & 0x0f;
             $ojpegdata .= substr $ac, $offset_table, 16;
@@ -2528,7 +2528,7 @@ sub t2p_write_pdf_catalog {
 sub t2p_write_pdf_info {
     my ( $t2p, $input, $output ) = @_;
 
-    my $buffer = '';
+    my $buffer = q{};
     if ( not defined $t2p->{pdf_datetime} ) { t2p_pdf_tifftime( $t2p, $input ) }
     if ( length $t2p->{pdf_datetime} > 0 ) {
         $buffer .= "<< \n/CreationDate (";
@@ -2685,7 +2685,7 @@ sub t2p_write_pdf_page {
             $buffer .= sprintf '%u', ( $t2p->{pdf_page} + 1 );
             $buffer .= '_';
             $buffer .= sprintf '%u', ( $i + 1 );
-            $buffer .= ' ';
+            $buffer .= q{ };
             $buffer .= sprintf '%lu',
               ( $object + 3 +
                   ( 2 * $i ) +
@@ -2701,7 +2701,7 @@ sub t2p_write_pdf_page {
         $buffer .= "/XObject <<\n";
         $buffer .= '/Im';
         $buffer .= sprintf '%u', ( $t2p->{pdf_page} + 1 );
-        $buffer .= ' ';
+        $buffer .= q{ };
         $buffer .= sprintf '%lu',
           ( $object + 3 +
               ( 2 * $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilecount} ) +
@@ -3052,7 +3052,7 @@ sub t2p_write_pdf_page_content_stream {
               $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tiles}[$i]{tile_box};
             my $buffer = sprintf
               "q %s %.4f %.4f %.4f %.4f %.4f %.4f cm /Im%d_%ld Do Q\n",
-              $t2p->{tiff_transferfunctioncount} ? '/GS1 gs ' : '',
+              $t2p->{tiff_transferfunctioncount} ? '/GS1 gs ' : q{},
               $box->{mat}[0],
               $box->{mat}[1],
               $box->{mat}[3],
@@ -3068,7 +3068,7 @@ sub t2p_write_pdf_page_content_stream {
         my $box    = $t2p->{pdf_imagebox};
         my $buffer = sprintf
           "q %s %.4f %.4f %.4f %.4f %.4f %.4f cm /Im%d Do Q\n",
-          $t2p->{tiff_transferfunctioncount} ? '/GS1 gs ' : '',
+          $t2p->{tiff_transferfunctioncount} ? '/GS1 gs ' : q{},
           $box->{mat}[0],
           $box->{mat}[1],
           $box->{mat}[3],
@@ -3174,7 +3174,7 @@ sub t2p_write_pdf_xobject_cs {
         $written += t2p_write_pdf_xobject_cs( $t2p, $output );
         $t2p->{pdf_colorspace} |= $T2P_CS_PALETTE;
         $buffer = sprintf '%u', ( 0x0001 << $t2p->{tiff_bitspersample} ) - 1;
-        $buffer .= ' ';
+        $buffer .= q{ };
         $buffer .= sprintf '%lu', $t2p->{pdf_palettecs};
         $buffer .= " 0 R ]\n";
         $written += t2pWriteFile( $output, $buffer );
