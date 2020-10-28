@@ -53,7 +53,7 @@ our $VERSION;
 my ($optarg);
 my $optind          = 0;
 my $stoponerr       = 1;
-my $TIFF2PDF_MODULE = "tiff2pdf";
+my $TIFF2PDF_MODULE = 'tiff2pdf';
 
 # Procs for TIFFClientOpen
 
@@ -261,7 +261,7 @@ sub main {
           "$TIFF2PDF_MODULE: Can't open output file $outfilename for writing\n";
     }
     else {
-        $outfilename = "-";
+        $outfilename = '-';
         $output      = *STDOUT;
     }
 
@@ -1167,7 +1167,7 @@ sub t2p_read_tiff_size {
                 else {
                     my $msg =
                       sprintf
-                      "Input file %s missing field: TIFFTAG_JPEGIFBYTECOUNT",
+                      'Input file %s missing field: TIFFTAG_JPEGIFBYTECOUNT',
                       $input->FileName();
                     warn "$msg\n";
                     $t2p->{t2p_error} = $T2P_ERR_ERROR;
@@ -1196,7 +1196,7 @@ sub t2p_read_tiff_size {
             if ( !@sbc ) {
                 my $msg =
                   sprintf
-                  "Input file %s missing field: TIFFTAG_STRIPBYTECOUNTS",
+                  'Input file %s missing field: TIFFTAG_STRIPBYTECOUNTS',
                   $input->FileName();
                 warn "$msg\n";
                 $t2p->{t2p_error} = $T2P_ERR_ERROR;
@@ -2484,14 +2484,14 @@ sub t2p_write_pdf_stream_end {
 sub t2p_write_pdf_stream_dict {
     my ( $len, $number, $output ) = @_;
 
-    my $buffer  = "/Length ";
+    my $buffer  = '/Length ';
     my $written = 0;
     if ( $len != 0 ) {
         $written += t2pWriteFile( $output, $buffer );
         $written += t2p_write_pdf_stream_length( $len, $output );
     }
     else {
-        $buffer .= sprintf "%lu", $number;
+        $buffer .= sprintf '%lu', $number;
         $buffer .= " 0 R \n";
         $written += t2pWriteFile( $output, $buffer );
     }
@@ -2617,7 +2617,7 @@ sub t2p_pdf_currenttime {
     }
 
     my @currenttime = localtime $timenow;
-    $t2p->{pdf_datetime} = sprintf "D:%.4d%.2d%.2d%.2d%.2d%.2d",
+    $t2p->{pdf_datetime} = sprintf 'D:%.4d%.2d%.2d%.2d%.2d%.2d',
       $currenttime[5] + 1900, $currenttime[4] + 1, $currenttime[3],
       $currenttime[2], $currenttime[1], $currenttime[0];
 
@@ -2655,8 +2655,8 @@ sub t2p_write_pdf_pages {
     my $buffer = "<< \n/Type /Pages \n/Kids [ ";
     my $page   = $t2p->{pdf_pages} + 1;
     for my $i ( 0 .. $t2p->{tiff_pagecount} - 1 ) {
-        $buffer .= sprintf "%d", $page;
-        $buffer .= " 0 R ";
+        $buffer .= sprintf '%d', $page;
+        $buffer .= ' 0 R ';
         if ( ( ( $i + 1 ) % 8 ) == 0 ) {
             $buffer .= "\n";
         }
@@ -2670,7 +2670,7 @@ sub t2p_write_pdf_pages {
         }
     }
     $buffer .= "] \n/Count ";
-    $buffer .= sprintf "%d", $t2p->{tiff_pagecount};
+    $buffer .= sprintf '%d', $t2p->{tiff_pagecount};
     $buffer .= " \n>> \n";
 
     return t2pWriteFile( $output, $buffer );
@@ -2682,7 +2682,7 @@ sub t2p_write_pdf_page {
     my ( $object, $t2p, $output ) = @_;
 
     my $buffer = "<<\n/Type /Page \n/Parent ";
-    $buffer .= sprintf "%lu", $t2p->{pdf_pages};
+    $buffer .= sprintf '%lu', $t2p->{pdf_pages};
     $buffer .= " 0 R \n";
     $buffer .= sprintf "/MediaBox [%.4f %.4f %.4f %.4f] \n",
       $t2p->{pdf_mediabox}{x1}, $t2p->{pdf_mediabox}{y1},
@@ -2698,16 +2698,16 @@ sub t2p_write_pdf_page {
             $i++
           )
         {
-            $buffer .= "/Im";
-            $buffer .= sprintf "%u", ( $t2p->{pdf_page} + 1 );
-            $buffer .= "_";
-            $buffer .= sprintf "%u", ( $i + 1 );
-            $buffer .= " ";
-            $buffer .= sprintf "%lu",
+            $buffer .= '/Im';
+            $buffer .= sprintf '%u', ( $t2p->{pdf_page} + 1 );
+            $buffer .= '_';
+            $buffer .= sprintf '%u', ( $i + 1 );
+            $buffer .= ' ';
+            $buffer .= sprintf '%lu',
               ( $object + 3 +
                   ( 2 * $i ) +
                   $t2p->{tiff_pages}[ $t2p->{pdf_page} ]{page_extra} );
-            $buffer .= " 0 R ";
+            $buffer .= ' 0 R ';
             if ( $i % 4 == 3 ) {
                 $buffer .= "\n";
             }
@@ -2716,33 +2716,33 @@ sub t2p_write_pdf_page {
     }
     else {
         $buffer .= "/XObject <<\n";
-        $buffer .= "/Im";
-        $buffer .= sprintf "%u", ( $t2p->{pdf_page} + 1 );
-        $buffer .= " ";
-        $buffer .= sprintf "%lu",
+        $buffer .= '/Im';
+        $buffer .= sprintf '%u', ( $t2p->{pdf_page} + 1 );
+        $buffer .= ' ';
+        $buffer .= sprintf '%lu',
           ( $object + 3 +
               ( 2 * $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilecount} ) +
               $t2p->{tiff_pages}[ $t2p->{pdf_page} ]{page_extra} );
-        $buffer .= " 0 R ";
+        $buffer .= ' 0 R ';
         $buffer .= ">>\n";
     }
     if ( $t2p->{tiff_transferfunctioncount} != 0 ) {
-        $buffer .= "/ExtGState <<";
-        $buffer .= "/GS1 ";
-        $buffer .= sprintf "%lu", ( $object + 3 );
-        $buffer .= " 0 R ";
+        $buffer .= '/ExtGState <<';
+        $buffer .= '/GS1 ';
+        $buffer .= sprintf '%lu', ( $object + 3 );
+        $buffer .= ' 0 R ';
         $buffer .= ">> \n";
     }
-    $buffer .= "/ProcSet [ ";
+    $buffer .= '/ProcSet [ ';
     if (   $t2p->{pdf_colorspace} == $T2P_CS_BILEVEL
         || $t2p->{pdf_colorspace} == $T2P_CS_GRAY )
     {
-        $buffer .= "/ImageB ";
+        $buffer .= '/ImageB ';
     }
     else {
-        $buffer .= "/ImageC ";
+        $buffer .= '/ImageC ';
         if ( $t2p->{pdf_colorspace} & $T2P_CS_PALETTE ) {
-            $buffer .= "/ImageI ";
+            $buffer .= '/ImageI ';
         }
     }
     $buffer .= "]\n>>\n>>\n";
@@ -3069,7 +3069,7 @@ sub t2p_write_pdf_page_content_stream {
               $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tiles}[$i]{tile_box};
             my $buffer = sprintf
               "q %s %.4f %.4f %.4f %.4f %.4f %.4f cm /Im%d_%ld Do Q\n",
-              $t2p->{tiff_transferfunctioncount} ? "/GS1 gs " : "",
+              $t2p->{tiff_transferfunctioncount} ? '/GS1 gs ' : '',
               $box->{mat}[0],
               $box->{mat}[1],
               $box->{mat}[3],
@@ -3085,7 +3085,7 @@ sub t2p_write_pdf_page_content_stream {
         my $box    = $t2p->{pdf_imagebox};
         my $buffer = sprintf
           "q %s %.4f %.4f %.4f %.4f %.4f %.4f cm /Im%d Do Q\n",
-          $t2p->{tiff_transferfunctioncount} ? "/GS1 gs " : "",
+          $t2p->{tiff_transferfunctioncount} ? '/GS1 gs ' : '',
           $box->{mat}[0],
           $box->{mat}[1],
           $box->{mat}[3],
@@ -3107,13 +3107,13 @@ sub t2p_write_pdf_xobject_stream_dict {
     my $written =
       t2p_write_pdf_stream_dict( 0, $t2p->{pdf_xrefcount} + 1, $output );
     my $buffer = "/Type /XObject \n/Subtype /Image \n/Name /Im";
-    $buffer .= sprintf "%u", $t2p->{pdf_page} + 1;
+    $buffer .= sprintf '%u', $t2p->{pdf_page} + 1;
     if ( $tile != 0 ) {
-        $buffer .= sprintf "_%lu", $tile;
+        $buffer .= sprintf '_%lu', $tile;
     }
     $buffer .= "\n/Width ";
     if ( $tile == 0 ) {
-        $buffer .= sprintf "%lu", $t2p->{tiff_width};
+        $buffer .= sprintf '%lu', $t2p->{tiff_width};
     }
     else {
         if (
@@ -3121,17 +3121,17 @@ sub t2p_write_pdf_xobject_stream_dict {
                 $tile - 1 ) != 0
           )
         {
-            $buffer .= sprintf "%lu",
+            $buffer .= sprintf '%lu',
               $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_edgetilewidth};
         }
         else {
-            $buffer .= sprintf "%lu",
+            $buffer .= sprintf '%lu',
               $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilewidth};
         }
     }
     $buffer .= "\n/Height ";
     if ( $tile == 0 ) {
-        $buffer .= sprintf "%lu", $t2p->{tiff_length};
+        $buffer .= sprintf '%lu', $t2p->{tiff_length};
     }
     else {
         if (
@@ -3139,16 +3139,16 @@ sub t2p_write_pdf_xobject_stream_dict {
                 $tile - 1 ) != 0
           )
         {
-            $buffer .= sprintf "%lu",
+            $buffer .= sprintf '%lu',
               $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_edgetilelength};
         }
         else {
-            $buffer .= sprintf "%lu",
+            $buffer .= sprintf '%lu',
               $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength};
         }
     }
     $buffer .= "\n/BitsPerComponent ";
-    $buffer .= sprintf "%u", $t2p->{tiff_bitspersample};
+    $buffer .= sprintf '%u', $t2p->{tiff_bitspersample};
     $buffer .= "\n/ColorSpace ";
     $written += t2pWriteFile( $output, $buffer );
     $written += t2p_write_pdf_xobject_cs( $t2p, $output );
@@ -3185,14 +3185,14 @@ sub t2p_write_pdf_xobject_cs {
         return t2p_write_pdf_xobject_icccs( $t2p, $output );
     }
     if ( ( $t2p->{pdf_colorspace} & $T2P_CS_PALETTE ) != 0 ) {
-        my $buffer = "[ /Indexed ";
+        my $buffer = '[ /Indexed ';
         $written += t2pWriteFile( $output, $buffer );
         $t2p->{pdf_colorspace} ^= $T2P_CS_PALETTE;
         $written += t2p_write_pdf_xobject_cs( $t2p, $output );
         $t2p->{pdf_colorspace} |= $T2P_CS_PALETTE;
-        $buffer = sprintf "%u", ( 0x0001 << $t2p->{tiff_bitspersample} ) - 1;
-        $buffer .= " ";
-        $buffer .= sprintf "%lu", $t2p->{pdf_palettecs};
+        $buffer = sprintf '%u', ( 0x0001 << $t2p->{tiff_bitspersample} ) - 1;
+        $buffer .= ' ';
+        $buffer .= sprintf '%lu', $t2p->{pdf_palettecs};
         $buffer .= " 0 R ]\n";
         $written += t2pWriteFile( $output, $buffer );
         return $written;
@@ -3222,7 +3222,7 @@ sub t2p_write_pdf_xobject_cs {
     }
     if ( $t2p->{pdf_colorspace} & $T2P_CS_LAB ) {
         $written += t2pWriteFile( $output, "[/Lab << \n" );
-        $written += t2pWriteFile( $output, "/WhitePoint " );
+        $written += t2pWriteFile( $output, '/WhitePoint ' );
         $X_W = $t2p->{tiff_whitechromaticities}[0];
         $Y_W = $t2p->{tiff_whitechromaticities}[1];
         $Z_W = 1.0 - ( $X_W + $Y_W );
@@ -3230,7 +3230,7 @@ sub t2p_write_pdf_xobject_cs {
         $Z_W /= $Y_W;
         $Y_W = 1.0;
         my $buffer = sprintf "[%.4f %.4f %.4f] \n", $X_W, $Y_W, $Z_W;
-        $buffer .= "/Range ";
+        $buffer .= '/Range ';
         $buffer .= sprintf "[%d %d %d %d] \n",
           $t2p->{pdf_labrange}[0],
           $t2p->{pdf_labrange}[1],
@@ -3275,9 +3275,9 @@ sub t2p_write_pdf_xobject_calcs {
     my $G   = 1.0;
     my $B   = 1.0;
 
-    $written += t2pWriteFile( $output, "[", 1 );
+    $written += t2pWriteFile( $output, '[', 1 );
     if ( $t2p->{pdf_colorspace} & $T2P_CS_CALGRAY ) {
-        $written += t2pWriteFile( $output, "/CalGray " );
+        $written += t2pWriteFile( $output, '/CalGray ' );
         $X_W = $t2p->{tiff_whitechromaticities}[0];
         $Y_W = $t2p->{tiff_whitechromaticities}[1];
         $Z_W = 1.0 - ( $X_W + $Y_W );
@@ -3286,7 +3286,7 @@ sub t2p_write_pdf_xobject_calcs {
         $Y_W = 1.0;
     }
     if ( $t2p->{pdf_colorspace} & $T2P_CS_CALRGB ) {
-        $written += t2pWriteFile( $output, "/CalRGB " );
+        $written += t2pWriteFile( $output, '/CalRGB ' );
         $x_w = $t2p->{tiff_whitechromaticities}[0];
         $y_w = $t2p->{tiff_whitechromaticities}[1];
         $x_r = $t2p->{tiff_primarychromaticities}[0];
@@ -3333,16 +3333,16 @@ sub t2p_write_pdf_xobject_calcs {
     }
     $written += t2pWriteFile( $output, "<< \n", 4 );
     if ( $t2p->{pdf_colorspace} & $T2P_CS_CALGRAY ) {
-        $written += t2pWriteFile( $output, "/WhitePoint " );
+        $written += t2pWriteFile( $output, '/WhitePoint ' );
         my $buffer = sprintf( "[%.4f %.4f %.4f] \n", $X_W, $Y_W, $Z_W );
         $written += t2pWriteFile( $output, $buffer );
         $written += t2pWriteFile( $output, "/Gamma 2.2 \n" );
     }
     if ( $t2p->{pdf_colorspace} & $T2P_CS_CALRGB ) {
-        $written += t2pWriteFile( $output, "/WhitePoint " );
+        $written += t2pWriteFile( $output, '/WhitePoint ' );
         my $buffer = sprintf( "[%.4f %.4f %.4f] \n", $X_W, $Y_W, $Z_W );
         $written += t2pWriteFile( $output, $buffer );
-        $written += t2pWriteFile( $output, "/Matrix " );
+        $written += t2pWriteFile( $output, '/Matrix ' );
         $buffer = sprintf( "[%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f] \n",
             $X_R, $Y_R, $Z_R, $X_G, $Y_G, $Z_G, $X_B, $Y_B, $Z_B );
         $written += t2pWriteFile( $output, $buffer );
@@ -3362,18 +3362,18 @@ sub t2p_write_pdf_xobject_stream_filter {
     if ( $t2p->{pdf_compression} == $T2P_COMPRESS_NONE ) {
         return 0;
     }
-    my $written = t2pWriteFile( $output, "/Filter " );
+    my $written = t2pWriteFile( $output, '/Filter ' );
     given ( $t2p->{pdf_compression} ) {
         when ($T2P_COMPRESS_G4) {
-            $written += t2pWriteFile( $output, "/CCITTFaxDecode " );
-            $written += t2pWriteFile( $output, "/DecodeParms " );
-            $written += t2pWriteFile( $output, "<< /K -1 " );
+            $written += t2pWriteFile( $output, '/CCITTFaxDecode ' );
+            $written += t2pWriteFile( $output, '/DecodeParms ' );
+            $written += t2pWriteFile( $output, '<< /K -1 ' );
             if ( $tile == 0 ) {
-                $written += t2pWriteFile( $output, "/Columns " );
-                my $buffer = sprintf "%lu", $t2p->{tiff_width};
+                $written += t2pWriteFile( $output, '/Columns ' );
+                my $buffer = sprintf '%lu', $t2p->{tiff_width};
                 $written += t2pWriteFile( $output, $buffer );
-                $written += t2pWriteFile( $output, " /Rows " );
-                $buffer = sprintf "%lu", $t2p->{tiff_length};
+                $written += t2pWriteFile( $output, ' /Rows ' );
+                $buffer = sprintf '%lu', $t2p->{tiff_length};
                 $written += t2pWriteFile( $output, $buffer );
             }
             else {
@@ -3383,14 +3383,14 @@ sub t2p_write_pdf_xobject_stream_filter {
                         $tile - 1 ) == 0
                   )
                 {
-                    $written += t2pWriteFile( $output, "/Columns " );
-                    my $buffer = sprintf "%lu",
+                    $written += t2pWriteFile( $output, '/Columns ' );
+                    my $buffer = sprintf '%lu',
                       $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilewidth};
                     $written += t2pWriteFile( $output, $buffer );
                 }
                 else {
-                    $written += t2pWriteFile( $output, "/Columns " );
-                    my $buffer = sprintf "%lu",
+                    $written += t2pWriteFile( $output, '/Columns ' );
+                    my $buffer = sprintf '%lu',
                       $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]
                       {tiles_edgetilewidth};
                     $written += t2pWriteFile( $output, $buffer );
@@ -3401,48 +3401,48 @@ sub t2p_write_pdf_xobject_stream_filter {
                         $tile - 1 ) == 0
                   )
                 {
-                    $written += t2pWriteFile( $output, " /Rows " );
-                    my $buffer = sprintf "%lu",
+                    $written += t2pWriteFile( $output, ' /Rows ' );
+                    my $buffer = sprintf '%lu',
                       $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]{tiles_tilelength};
                     $written += t2pWriteFile( $output, $buffer );
                 }
                 else {
-                    $written += t2pWriteFile( $output, " /Rows " );
-                    my $buffer = sprintf "%lu",
+                    $written += t2pWriteFile( $output, ' /Rows ' );
+                    my $buffer = sprintf '%lu',
                       $t2p->{tiff_tiles}[ $t2p->{pdf_page} ]
                       {tiles_edgetilelength};
                     $written += t2pWriteFile( $output, $buffer );
                 }
             }
             if ( $t2p->{pdf_switchdecode} == 0 ) {
-                $written += t2pWriteFile( $output, " /BlackIs1 true " );
+                $written += t2pWriteFile( $output, ' /BlackIs1 true ' );
             }
             $written += t2pWriteFile( $output, ">>\n" );
         }
         when ($T2P_COMPRESS_JPEG) {
-            $written += t2pWriteFile( $output, "/DCTDecode " );
+            $written += t2pWriteFile( $output, '/DCTDecode ' );
 
             if ( $t2p->{tiff_photometric} != PHOTOMETRIC_YCBCR ) {
-                $written += t2pWriteFile( $output, "/DecodeParms " );
+                $written += t2pWriteFile( $output, '/DecodeParms ' );
                 $written +=
                   t2pWriteFile( $output, "<< /ColorTransform 0 >>\n" );
             }
         }
         when ($T2P_COMPRESS_ZIP) {
-            $written += t2pWriteFile( $output, "/FlateDecode " );
+            $written += t2pWriteFile( $output, '/FlateDecode ' );
             if ( $t2p->{pdf_compressionquality} % 100 ) {
-                $written += t2pWriteFile( $output, "/DecodeParms " );
-                $written += t2pWriteFile( $output, "<< /Predictor " );
-                my $buffer = sprintf "%u", $t2p->{pdf_compressionquality} % 100;
+                $written += t2pWriteFile( $output, '/DecodeParms ' );
+                $written += t2pWriteFile( $output, '< /Predictor ' );
+                my $buffer = sprintf '%u', $t2p->{pdf_compressionquality} % 100;
                 $written += t2pWriteFile( $output, $buffer );
-                $written += t2pWriteFile( $output, " /Columns " );
-                $buffer = sprintf "%lu", $t2p->{tiff_width};
+                $written += t2pWriteFile( $output, ' /Columns ' );
+                $buffer = sprintf '%lu', $t2p->{tiff_width};
                 $written += t2pWriteFile( $output, $buffer );
-                $written += t2pWriteFile( $output, " /Colors " );
-                $buffer = sprintf "%u", $t2p->{tiff_samplesperpixel};
+                $written += t2pWriteFile( $output, ' /Colors ' );
+                $buffer = sprintf '%u', $t2p->{tiff_samplesperpixel};
                 $written += t2pWriteFile( $output, $buffer );
-                $written += t2pWriteFile( $output, " /BitsPerComponent " );
-                $buffer = sprintf "%u", $t2p->{tiff_bitspersample};
+                $written += t2pWriteFile( $output, ' /BitsPerComponent ' );
+                $buffer = sprintf '%u', $t2p->{tiff_bitspersample};
                 $written += t2pWriteFile( $output, $buffer );
                 $written += t2pWriteFile( $output, ">>\n" );
             }
@@ -3458,7 +3458,7 @@ sub t2p_write_pdf_xreftable {
     my ( $t2p, $output ) = @_;
 
     my $written = t2pWriteFile( $output, "xref\n0 " );
-    my $buffer = sprintf( "%lu", $t2p->{pdf_xrefcount} + 1 );
+    my $buffer = sprintf( '%lu', $t2p->{pdf_xrefcount} + 1 );
     $written += t2pWriteFile( $output, $buffer );
     $written += t2pWriteFile( $output, " \n0000000000 65535 f \n" );
     for my $i ( 0 .. $t2p->{pdf_xrefcount} - 1 ) {
@@ -3475,24 +3475,24 @@ sub t2p_write_pdf_trailer {
     my ( $t2p, $output ) = @_;
 
     for ( my $i = 0 ; $i < 25 ; $i += 8 ) {
-        $t2p->{pdf_fileid} .= sprintf( "%.8X", int( rand( 0xFFFFFFFF + 1 ) ) );
+        $t2p->{pdf_fileid} .= sprintf( '%.8X', int( rand( 0xFFFFFFFF + 1 ) ) );
     }
 
     my $written = t2pWriteFile( $output, "trailer\n<<\n/Size " );
-    my $buffer = sprintf( "%lu", $t2p->{pdf_xrefcount} + 1 );
+    my $buffer = sprintf( '%lu', $t2p->{pdf_xrefcount} + 1 );
     $written += t2pWriteFile( $output, $buffer );
     $written += t2pWriteFile( $output, "\n/Root " );
-    $buffer = sprintf( "%lu", $t2p->{pdf_catalog} );
+    $buffer = sprintf( '%lu', $t2p->{pdf_catalog} );
     $written += t2pWriteFile( $output, $buffer );
     $written += t2pWriteFile( $output, " 0 R \n/Info " );
-    $buffer = sprintf( "%lu", $t2p->{pdf_info} );
+    $buffer = sprintf( '%lu', $t2p->{pdf_info} );
     $written += t2pWriteFile( $output, $buffer );
     $written += t2pWriteFile( $output, " 0 R \n/ID[<" );
     $written += t2pWriteFile( $output, $t2p->{pdf_fileid} );
-    $written += t2pWriteFile( $output, "><" );
+    $written += t2pWriteFile( $output, '><' );
     $written += t2pWriteFile( $output, $t2p->{pdf_fileid} );
     $written += t2pWriteFile( $output, ">]\n>>\nstartxref\n" );
-    $buffer = sprintf( "%lu", $t2p->{pdf_startxref} );
+    $buffer = sprintf( '%lu', $t2p->{pdf_startxref} );
     $written += t2pWriteFile( $output, $buffer );
     $written += t2pWriteFile( $output, "\n%%EOF\n" );
 
@@ -3523,7 +3523,7 @@ sub t2p_write_pdf_trailer {
 # beginning of the file.  The function only writes to the output PDF and does
 # not seek.  See the example usage in the main() function.
 
-#	TIFF* output = TIFFOpen("output.pdf", "w");
+#	TIFF* output = TIFFOpen('output.pdf', 'w');
 #	assert(output != NULL);
 
 #	if(output->tif_seekproc != NULL){
