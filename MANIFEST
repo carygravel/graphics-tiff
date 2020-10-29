@@ -1,6 +1,7 @@
 Changes
 MANIFEST
 Makefile.PL
+README
 TIFF.xs
 examples/tiff2pdf.pl
 examples/tiffinfo.pl
@@ -15,4 +16,3 @@ t/93_tiff2pdf.t
 t/perlcriticrc
 tiffperl.h
 typemap
-README

@@ -78,7 +78,6 @@ SOURCE_TIDY = $(foreach file,$(SOURCE),$(file).tdy)
 
 MANIFEST : $(SOURCE)
 	git ls-files | egrep -v '^\.(git|be)' > $@
-	echo README >> $@
 
 tardist : README
 
