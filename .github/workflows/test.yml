@@ -9,7 +9,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: sudo apt-get update
-      - run: sudo apt-get -y upgrade
       - run: sudo apt-get -y install libextutils-depends-perl libextutils-pkgconfig-perl libimage-magick-perl libreadonly-perl libtest-deep-perl libtest-requires-perl libtest-simple-perl libtiff-dev libperl-dev perl
       - run: perl Makefile.PL
       - run: make test
