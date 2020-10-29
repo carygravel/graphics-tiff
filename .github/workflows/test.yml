@@ -1,0 +1,23 @@
+name: Test
+on:
+  - push
+  - pull_request
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt update
+      - run: sudo apt-get -y install libextutils-depends-perl libextutils-pkgconfig-perl libimage-magick-perl libreadonly-perl libtest-deep-perl libtest-requires-perl libtest-simple-perl libtiff-dev libperl-dev perl
+      - run: perl Makefile.PL
+      - run: make test
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: github/super-linter@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FILTER_REGEX_EXCLUDE: Makefile.PL
