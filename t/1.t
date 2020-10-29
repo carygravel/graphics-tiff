@@ -67,7 +67,7 @@ SKIP: {
         );
     }
 
-    @counts = $tif->GetField(TIFFTAG_WHITEPOINT);
+    @counts   = $tif->GetField(TIFFTAG_WHITEPOINT);
     @expected = ( 0.312700003385544, 0.328999996185303 );
     for my $i ( 0 .. $#expected ) {
         cmp_deeply(
