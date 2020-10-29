@@ -3,6 +3,7 @@ use strict;
 use Graphics::TIFF ':all';
 use Test::More tests => 49;
 use Test::Deep;
+use IPC::Cmd qw(can_run);
 BEGIN { use_ok('Graphics::TIFF') }
 
 #########################
@@ -124,7 +125,7 @@ SKIP: {
 eval "use Image::Magick";
 SKIP: {
     skip 'Image::Magick or tiffcmp not installed', 1
-      if ( $@ or system("which tiffinfo > /dev/null 2> /dev/null") != 0 );
+      if ( $@ or not can_run('tiffcmp') );
 
     my $tif = Graphics::TIFF->Open( 'test.tif',  'r' );
     my $out = Graphics::TIFF->Open( 'test2.tif', 'w' );
@@ -159,7 +160,7 @@ SKIP: {
 
 eval "use Image::Magick";
 SKIP: {
-    skip 'Image::Magick not installed', 2 if $@;
+    skip 'Image::Magick not installed', 8 if $@;
 
     my $image = Image::Magick->new;
     $image->Read('rose:');
@@ -176,21 +177,16 @@ SKIP: {
         'GetFieldDefaulted TIFFTAG_EXTRASAMPLES' );
 
     $tif->Close;
-}
 
 #########################
 
-eval "use Image::Magick";
-SKIP: {
-    skip 'Image::Magick not installed', 6 if $@;
-
-    my $image = Image::Magick->new;
+    $image = Image::Magick->new;
     $image->Read('rose:');
     $image->Set( density => '72x72', type => 'palette', depth => 2 );
     $image->Write('test.tif');
-    my $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
+    $tif = Graphics::TIFF->Open( 'test.tif', 'r' );
 
-    my @values = $tif->GetField(TIFFTAG_COLORMAP);
+    @values = $tif->GetField(TIFFTAG_COLORMAP);
     is $#{ $values[0] }, 255, 'GetField TIFFTAG_COLORMAP r';
     is $#{ $values[1] }, 255, 'GetField TIFFTAG_COLORMAP g';
     is $#{ $values[2] }, 255, 'GetField TIFFTAG_COLORMAP b';
