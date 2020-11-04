@@ -1,17 +1,17 @@
 use warnings;
 use strict;
 use English;
+use IPC::Cmd qw(can_run);
 use Test::More;
-use Test::Requires qw( v5.10 );
+use Test::Requires qw( v5.10 Image::Magick );
 
 #########################
 
-eval "use Image::Magick";
-if ( not $@ and system("which tiff2pdf > /dev/null 2> /dev/null") == 0 ) {
+if ( can_run('tiff2pdf') ) {
     plan tests => 4;
 }
 else {
-    plan skip_all => 'Image::Magick or tiff2pdf not installed';
+    plan skip_all => 'tiff2pdf not installed';
     exit;
 }
 
