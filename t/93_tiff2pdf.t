@@ -26,6 +26,8 @@ my $make_reproducible =
 # strip '' from around ?, which newer glibc libraries seem to have added
 my $expected = `tiff2pdf -? $tif 2>&1`;
 $expected =~ s/'\?'/?/xsm;
+# strip '-m' option added in tiff-4.2.0
+$expected =~ s/^ -m: .*?\R//ms;
 is( `$cmd -? $tif 2>&1`, $expected, '-?' );
 
 #########################
