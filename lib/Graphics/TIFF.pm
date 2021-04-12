@@ -208,7 +208,7 @@ our %EXPORT_TAGS = (
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our $VERSION = 9;
+our $VERSION = 10;
 
 require XSLoader;
 XSLoader::load( 'Graphics::TIFF', $VERSION );
@@ -246,7 +246,7 @@ Graphics::TIFF - Perl extension for the libtiff library
 
 =head1 VERSION
 
-9
+10
 
 =head1 SYNOPSIS
 
