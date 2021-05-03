@@ -676,6 +676,20 @@ TIFFPRINT_JPEGDCTABLES
 
 =head1 DEPENDENCIES
 
+=head2 Runtime
+
+The runtime dependencies are just libtiff itself.
+
+=head2 Build
+
+The build dependencies are additionally the development headers for libtiff
+and Perl.
+
+=head2 Test
+
+In addition to the above, the Perl module Image::Magick is required to run some
+of the tests.
+
 =head1 INCOMPATIBILITIES
 
 =head1 BUGS AND LIMITATIONS

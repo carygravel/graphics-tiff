@@ -35,6 +35,20 @@ CONFIGURATION AND ENVIRONMENT
 
 DEPENDENCIES
 
+ Runtime
+
+    The runtime dependencies are just libtiff itself.
+
+ Build
+
+    The build dependencies are additionally the development headers for
+    libtiff and Perl.
+
+ Test
+
+    In addition to the above, the Perl module Image::Magick is required to
+    run some of the tests.
+
 INCOMPATIBILITIES
 
 BUGS AND LIMITATIONS
