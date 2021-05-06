@@ -1,5 +1,9 @@
 Revision history for Perl extension Graphics::TIFF.
 
+13  Thu, 06 May 2021 19:37 -0400
+        - Makefile.PL fix Makemaker API error (return '';)
+        - tiffperl.h  use TIFFPERL_H_ style
+
 12  Thu, 29 Apr 2021 22:30 +0200
         - Changes to tests to fix RT 122933
           (t/1.t test crashes with ImageMagick 7.0.6.9)
