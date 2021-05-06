@@ -12,4 +12,4 @@
 /* Include all of libtiff's headers for internal consistency */
 #include <tiffio.h>
 
-#endif // TIFFPERL_H_
+#endif  // TIFFPERL_H_
