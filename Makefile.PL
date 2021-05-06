@@ -81,7 +81,7 @@ sub MY::postamble {
 
     # GNU Make extensions that BSD make doesn't like.
     # Author-only stuff, so comment out for non-Linux.
-    if ( $OSNAME ne 'linux' ) { return }
+    if ( $OSNAME ne 'linux' ) { return ''; }
     return <<'END';
 SHELL = bash
 MANIFEST = $(shell cat MANIFEST)
