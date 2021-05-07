@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use 5.008;
-use ExtUtils::MakeMaker;
+use ExtUtils::MakeMaker 6.5503;
 use ExtUtils::Depends;
 use ExtUtils::PkgConfig;
 use English;
@@ -24,7 +24,7 @@ if (
     }
   )
 {
-    $lib = $pkgcfg{libs};
+    $lib .= $pkgcfg{libs};
     $inc .= $pkgcfg{cflags};
     $runtime_reqs{libtiff} = $pkgcfg{modversion};
 }
@@ -36,6 +36,7 @@ WriteMakefile(
     VERSION_FROM       => 'lib/Graphics/TIFF.pm',    # finds $VERSION
     PREREQ_PM          => { Readonly => 0 },         # e.g., Module::Name => 1.1
     CONFIGURE_REQUIRES => {
+	'ExtUtils::MakeMaker' => 6.5503,
         'ExtUtils::Depends'   => 0,
         'ExtUtils::PkgConfig' => 0
     },
@@ -81,7 +82,7 @@ sub MY::postamble {
 
     # GNU Make extensions that BSD make doesn't like.
     # Author-only stuff, so comment out for non-Linux.
-    if ( $OSNAME ne 'linux' ) { return ''; }
+    if ( $OSNAME ne 'linux' ) { return '' }
     return <<'END';
 SHELL = bash
 MANIFEST = $(shell cat MANIFEST)
