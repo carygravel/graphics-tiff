@@ -37,7 +37,8 @@ WriteMakefile(
     PREREQ_PM          => { Readonly => 0 },         # e.g., Module::Name => 1.1
     CONFIGURE_REQUIRES => {
         'ExtUtils::Depends'   => 0,
-        'ExtUtils::PkgConfig' => 0
+        'ExtUtils::PkgConfig' => 0,
+        ( $OSNAME =~ /mswin/i ) ? ( "Alien::libtiff" => 0 ) : (),
     },
     TEST_REQUIRES => {
         'File::Spec'     => 0,

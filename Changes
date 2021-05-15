@@ -1,8 +1,9 @@
 Revision history for Perl extension Graphics::TIFF.
 
-13  Thu, 06 May 2021 19:37 -0400
+13  Thu, 28 May 2021 00:00 +0000
         - Makefile.PL - Fix error creating Makefile on Windows
         - tiffperl.h - follow Google style guide to satisfy linter
+        - Windows dependency on Alien::libtiff
 
 12  Thu, 29 Apr 2021 22:30 +0200
         - Changes to tests to fix RT 122933

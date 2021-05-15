@@ -4,7 +4,7 @@ NAME
 
 VERSION
 
-    12
+    13
 
 SYNOPSIS
 
@@ -37,7 +37,8 @@ DEPENDENCIES
 
  Runtime
 
-    The runtime dependencies are just libtiff itself.
+    The runtime dependencies are just libtiff itself. In Windows this is
+    satisfied by Alien::libtiff.
 
  Build
 

@@ -208,7 +208,7 @@ our %EXPORT_TAGS = (
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our $VERSION = 12;
+our $VERSION = 13;
 
 require XSLoader;
 XSLoader::load( 'Graphics::TIFF', $VERSION );
@@ -246,7 +246,7 @@ Graphics::TIFF - Perl extension for the libtiff library
 
 =head1 VERSION
 
-12
+13
 
 =head1 SYNOPSIS
 
@@ -678,7 +678,8 @@ TIFFPRINT_JPEGDCTABLES
 
 =head2 Runtime
 
-The runtime dependencies are just libtiff itself.
+The runtime dependencies are just libtiff itself. In Windows this is satisfied
+by Alien::libtiff.
 
 =head2 Build
 
