@@ -9,7 +9,7 @@
 #ifndef TIFFPERL_H_
 #define TIFFPERL_H_
 
-/* Include all of libtiff's headers for internal consistency */
+// Include all of libtiff's headers for internal consistency
 #include <tiffio.h>
 
 #endif  // TIFFPERL_H_
