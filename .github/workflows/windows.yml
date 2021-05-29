@@ -21,6 +21,14 @@ jobs:
       - run: echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: choco install imagemagick 
       - run: cpan Alien::libtiff ExtUtils::Depends ExtUtils::PkgConfig Test::Deep Test::Requires Test::Simple Readonly .
+  windows-latest_dynamic:
+    name: windows-latest_dynamic
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - run: choco install imagemagick 
+      - run: cpan .
   windows-latest_cpan:
     name: windows-latest_cpan
     runs-on: windows-latest

@@ -56,6 +56,9 @@ WriteMakefile(
                 web  => 'https://github.com/carygravel/graphics-tiff',
             },
         },
+
+        # because Alien::libtiff is only required for Windows
+        dynamic_config => 1,
     },
     clean => { FILES => '$(SOURCE_TIDY)' },
 
