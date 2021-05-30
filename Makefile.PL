@@ -32,9 +32,12 @@ if (
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 WriteMakefile(
-    NAME               => 'Graphics::TIFF',
-    VERSION_FROM       => 'lib/Graphics/TIFF.pm',    # finds $VERSION
-    PREREQ_PM          => { Readonly => 0 },         # e.g., Module::Name => 1.1
+    NAME         => 'Graphics::TIFF',
+    VERSION_FROM => 'lib/Graphics/TIFF.pm',    # finds $VERSION
+    PREREQ_PM    => {
+        Readonly => 0,
+        ( $OSNAME =~ /mswin/i ) ? ( "Alien::libtiff" => 0 ) : (),
+    },
     CONFIGURE_REQUIRES => {
         'ExtUtils::Depends'   => 0,
         'ExtUtils::PkgConfig' => 0,
