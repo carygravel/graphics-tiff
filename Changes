@@ -2,6 +2,8 @@ Revision history for Perl extension Graphics::TIFF.
 
 14  Mon, 31 May 2021 00:00 +0000
         - Windows runtime dependency on Alien::libtiff
+        - Use the standardised uint16_t etc. types.
+          Closes RT #136629 (uint16, uint32, and unint64 types are deprecated)
 
 13  Thu, 28 May 2021 00:00 +0000
         - Makefile.PL - Fix error creating Makefile on Windows
