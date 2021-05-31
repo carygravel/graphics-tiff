@@ -103,7 +103,7 @@ tardist : README
 README : lib/Graphics/TIFF.pm
 	pod2readme $< $@
 
-tidy : MANIFEST $(SOURCE_TIDY)
+tidy : MANIFEST $(SOURCE_TIDY) README
 
 %.tdy : %
 	perltidy $* && if ! diff -q $@ $* > /dev/null; then cp $@ $*; fi
