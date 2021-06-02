@@ -37,3 +37,16 @@ jobs:
       - run: echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: choco install imagemagick 
       - run: cpan Graphics::TIFF
+  windows-perl5_22:
+    name: windows-perl5_22
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - run: choco uninstall strawberryperl
+      - run: choco install strawberryperl --version=5.22.3.1
+      - run: choco install imagemagick
+      - run: refreshenv
+      - run: cpan Alien::libtiff ExtUtils::Depends ExtUtils::PkgConfig Test::Deep Test::Requires Test::Simple Readonly
+      - run: perl Makefile.PL
+      - run: dmake test TEST_VERBOSE=1
