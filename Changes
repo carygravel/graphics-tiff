@@ -1,5 +1,8 @@
 Revision history for Perl extension Graphics::TIFF.
 
+16  Tue, 11 Oct 2021 00:00 +0000
+        - Wrap TIFFReverseBits()
+
 15  Thu, 03 Jun 2021 00:00 +0000
         - + *_t types for those pre C99 compilers that do not have them.
           Closes GH #5 (GT 14 will not install on Strawberry Perl 5.22)

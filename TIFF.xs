@@ -650,3 +650,10 @@ tiff_PrintDirectory (tif, file, flags)
                 long            flags
         CODE:
                 TIFFPrintDirectory(tif, file, flags);
+
+void
+tiff_ReverseBits (data, size)
+                void*           data
+                tmsize_t        size
+        CODE:
+                TIFFReverseBits((uint8_t*) data, size);
