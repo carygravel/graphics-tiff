@@ -700,7 +700,7 @@ sub t2p_read_tiff_data {
     }
 
     given ( $t2p->{tiff_photometric} ) {
-        when ( [PHOTOMETRIC_MINISWHITE,PHOTOMETRIC_MINISBLACK] ) {
+        when ( [ PHOTOMETRIC_MINISWHITE, PHOTOMETRIC_MINISBLACK ] ) {
             if ( $t2p->{tiff_bitspersample} == 1 ) {
                 $t2p->{pdf_colorspace} = $T2P_CS_BILEVEL;
                 if ( $t2p->{tiff_photometric} == PHOTOMETRIC_MINISWHITE ) {
