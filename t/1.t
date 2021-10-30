@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 50;
+use Test::More tests => 51;
 use Test::Deep;
 use IPC::Cmd qw(can_run);
 use Test::Requires qw( Image::Magick );
@@ -204,7 +204,7 @@ elsif ( $OSNAME ne 'MSWin32' and can_run('convert') ) {
     $convert = 'convert';
 }
 SKIP: {
-    skip 'convert not installed', 2 if ( not $convert );
+    skip 'convert not installed', 3 if ( not $convert );
     system "$convert rose: -define tiff:predictor=2 -compress lzw $file";
     $tif = Graphics::TIFF->Open( $file, 'r' );
     is $tif->GetField(TIFFTAG_PREDICTOR), PREDICTOR_HORIZONTAL,
@@ -217,4 +217,18 @@ SKIP: {
     $tif = Graphics::TIFF->Open( $file, 'r' );
     is( length( $tif->ReadTile( 0, 0, 0, 0 ) ), 196608, 'ReadTile' );
     $tif->Close;
+
+#########################
+
+    my $width  = 6;
+    my $height = 2;
+    system(
+"$convert -depth 1 -size ${width}x${height} pattern:gray50 -alpha off -define tiff:fill-order=lsb -compress group4 $file"
+    );
+    $tif = Graphics::TIFF->Open( $file, 'r' );
+    is unpack( 'B*', $tif->ReadRawStrip( 0, -1 ) ),
+'01100100000101010111000101000001011010100100100100001010100000000000000000001000',
+      'no random crash calling ReadRawStrip under Windows';
+    $tif->Close;
+
 }
