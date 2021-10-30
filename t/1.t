@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 use Graphics::TIFF ':all';
-use Test::More tests => 51;
+use Test::More tests => 54;
 use Test::Deep;
 use IPC::Cmd qw(can_run);
 use Test::Requires qw( Image::Magick );
@@ -204,7 +204,7 @@ elsif ( $OSNAME ne 'MSWin32' and can_run('convert') ) {
     $convert = 'convert';
 }
 SKIP: {
-    skip 'convert not installed', 3 if ( not $convert );
+    skip 'convert not installed', 6 if ( not $convert );
     system "$convert rose: -define tiff:predictor=2 -compress lzw $file";
     $tif = Graphics::TIFF->Open( $file, 'r' );
     is $tif->GetField(TIFFTAG_PREDICTOR), PREDICTOR_HORIZONTAL,
@@ -222,13 +222,42 @@ SKIP: {
 
     my $width  = 6;
     my $height = 2;
+system("$convert -depth 1 -size ${width}x${height} pattern:gray50 -alpha off -define tiff:rows-per-strip=1 -compress group4 $file");
+    $tif = Graphics::TIFF->Open( $file, 'r' );
+    is unpack( 'B*', $tif->ReadRawStrip( 0, -1 ) ),
+      '0010011010101000100011101000001001010000000000010000000000010000',
+      'no random crash calling ReadRawStrip under Windows';
+    $tif->Close;
+
+#########################
+
+system("$convert -depth 1 -size ${width}x${height} pattern:gray50 -alpha off -define tiff:rows-per-strip=1 -define quantum:polarity=min-is-black -compress fax $file");
+    $tif = Graphics::TIFF->Open( $file, 'r' );
+    is unpack( 'B*', $tif->ReadRawStrip( 0, -1 ) ),
+      '000000000000000100011101000011101000011101000000',
+      'no random crash calling ReadRawStrip under Windows #2';
+    $tif->Close;
+
+#########################
+
+    system(
+"$convert -depth 1 -size ${width}x${height} pattern:gray50 -alpha off -define tiff:rows-per-strip=1 -define quantum:polarity=min-is-black -compress group4 $file"
+    );
+    $tif = Graphics::TIFF->Open( $file, 'r' );
+    is unpack( 'B*', $tif->ReadRawStrip( 0, -1 ) ),
+      '00100011101000000100000100101000000000001000000000001000',
+      'no random crash calling ReadRawStrip under Windows #3';
+    $tif->Close;
+
+#########################
+
     system(
 "$convert -depth 1 -size ${width}x${height} pattern:gray50 -alpha off -define tiff:fill-order=lsb -compress group4 $file"
     );
     $tif = Graphics::TIFF->Open( $file, 'r' );
     is unpack( 'B*', $tif->ReadRawStrip( 0, -1 ) ),
 '01100100000101010111000101000001011010100100100100001010100000000000000000001000',
-      'no random crash calling ReadRawStrip under Windows';
+      'no random crash calling ReadRawStrip under Windows #4';
     $tif->Close;
 
 }
