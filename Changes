@@ -1,5 +1,8 @@
 Revision history for Perl extension Graphics::TIFF.
 
+18  Tue, 1 Nov 2021 00:00 +0000
+        - Remove unnecessary cast from (unsigned char *) to (void * ) in buffers
+
 17  Tue, 11 Oct 2021 00:00 +0000
         - Wrap TIFFReverseBits()
 

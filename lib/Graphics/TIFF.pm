@@ -202,13 +202,13 @@ our %EXPORT_TAGS = (
           TIFFPRINT_JPEGQTABLES
           TIFFPRINT_JPEGACTABLES
           TIFFPRINT_JPEGDCTABLES
-          )
+        )
     ]
 );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our $VERSION = 17;
+our $VERSION = 18;
 
 require XSLoader;
 XSLoader::load( 'Graphics::TIFF', $VERSION );
@@ -246,7 +246,7 @@ Graphics::TIFF - Perl extension for the libtiff library
 
 =head1 VERSION
 
-17
+18
 
 =head1 SYNOPSIS
 
