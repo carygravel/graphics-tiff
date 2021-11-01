@@ -700,7 +700,7 @@ sub t2p_read_tiff_data {
     }
 
     given ( $t2p->{tiff_photometric} ) {
-        when ( [PHOTOMETRIC_MINISWHITE,PHOTOMETRIC_MINISBLACK] ) {
+        when ( [ PHOTOMETRIC_MINISWHITE, PHOTOMETRIC_MINISBLACK ] ) {
             if ( $t2p->{tiff_bitspersample} == 1 ) {
                 $t2p->{pdf_colorspace} = $T2P_CS_BILEVEL;
                 if ( $t2p->{tiff_photometric} == PHOTOMETRIC_MINISWHITE ) {
@@ -1793,7 +1793,7 @@ sub t2p_readwrite_pdf_image_tile {
                     my $xuint32 = length($buffer) - $count - 2;
                     $table_end[0] = substr $buffer, -2;
                     $table_end[1] = substr $buffer, -1;
-                    $buffer = substr $buffer, 0, -2;
+                    $buffer       = substr $buffer, 0, -2;
                     $buffer .= $input->ReadRawTile( $tile, -1 );
                     substr( $buffer, $xuint32 - 2 ) = $table_end[0];
                     substr( $buffer, $xuint32 - 1 ) = $table_end[1];
