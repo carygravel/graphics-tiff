@@ -668,6 +668,11 @@ TIFFPRINT_JPEGQTABLES
 TIFFPRINT_JPEGACTABLES
 TIFFPRINT_JPEGDCTABLES
 
+=head2 Graphics::TIFF::ReverseBits(data, size)
+
+Replaces each byte in data with the equivalent bit-reversed value. This
+operation is done with a lookup table.
+
 =for readme continue
 
 =head1 DIAGNOSTICS
