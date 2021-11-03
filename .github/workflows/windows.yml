@@ -8,8 +8,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - run: echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: choco install imagemagick 
+      - run: |
+          $folders = Get-ChildItem "C:\Program Files\ImageMagick*"
+          foreach ($folder in $folders) {
+              $imfolder = $folder.FullName
+          }
+          echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;$imfolder" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: |
              $env:ALIEN_INSTALL_TYPE="share"
              cpan Alien::libtiff ExtUtils::Depends ExtUtils::PkgConfig Test::Deep Test::Requires Test::Simple Readonly .
@@ -18,34 +23,54 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - run: echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: choco install imagemagick 
+      - run: |
+          $folders = Get-ChildItem "C:\Program Files\ImageMagick*"
+          foreach ($folder in $folders) {
+              $imfolder = $folder.FullName
+          }
+          echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;$imfolder" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: cpan Alien::libtiff ExtUtils::Depends ExtUtils::PkgConfig Test::Deep Test::Requires Test::Simple Readonly .
   windows-latest_dynamic:
     name: windows-latest_dynamic
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - run: echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: choco install imagemagick 
+      - run: |
+          $folders = Get-ChildItem "C:\Program Files\ImageMagick*"
+          foreach ($folder in $folders) {
+              $imfolder = $folder.FullName
+          }
+          echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;$imfolder" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: cpan .
   windows-latest_cpan:
     name: windows-latest_cpan
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - run: echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: choco install imagemagick 
+      - run: |
+          $folders = Get-ChildItem "C:\Program Files\ImageMagick*"
+          foreach ($folder in $folders) {
+              $imfolder = $folder.FullName
+          }
+          echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;$imfolder" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: cpan Graphics::TIFF
   windows-perl5_22:
     name: windows-perl5_22
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - run: echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: choco uninstall strawberryperl
       - run: choco install strawberryperl --version=5.22.3.1
-      - run: choco install imagemagick
+      - run: choco install imagemagick 
+      - run: |
+          $folders = Get-ChildItem "C:\Program Files\ImageMagick*"
+          foreach ($folder in $folders) {
+              $imfolder = $folder.FullName
+          }
+          echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;$imfolder" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: refreshenv
       - run: cpan Alien::libtiff ExtUtils::Depends ExtUtils::PkgConfig Test::Deep Test::Requires Test::Simple Readonly
       - run: perl Makefile.PL
