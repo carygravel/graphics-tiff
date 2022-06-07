@@ -287,6 +287,7 @@ sub readrawdata {
 
 sub tiffinfo {
     my ( $tif, $order, $flags, $is_image ) = @_;
+    printf("=== TIFF directory %d ===\n", $tif->CurrentDirectory);
     $tif->PrintDirectory( *STDOUT, $flags );
     if ( not $readdata or not $is_image ) { return }
     if ($rawdata) {

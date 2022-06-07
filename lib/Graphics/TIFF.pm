@@ -653,6 +653,10 @@ reversal is done if the FillOrder tag is opposite to the native machine bit
 order. 16- and 32-bit samples are automatically byte-swapped if the file was
 written with a byte order opposite to the native machine byte order.
 
+=head2 $tif->CurrentDirectory()
+
+Return an index number of the current directory in the specified TIFF file.
+
 =head2 $tif->PrintDirectory(file, flags)
 
 Prints a description of the current directory in the specified TIFF file to the
