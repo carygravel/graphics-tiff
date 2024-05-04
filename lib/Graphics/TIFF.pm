@@ -248,7 +248,7 @@ Graphics::TIFF - Perl extension for the libtiff library
 
 =head1 VERSION
 
-20
+21
 
 =head1 SYNOPSIS
 
