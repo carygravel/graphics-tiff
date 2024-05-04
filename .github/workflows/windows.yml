@@ -57,21 +57,3 @@ jobs:
           }
           echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;$imfolder" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: cpan Graphics::TIFF
-  windows-perl5_22:
-    name: windows-perl5_22
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: choco uninstall strawberryperl
-      - run: choco install strawberryperl --version=5.22.3.1
-      - run: choco install imagemagick 
-      - run: |
-          $folders = Get-ChildItem "C:\Program Files\ImageMagick*"
-          foreach ($folder in $folders) {
-              $imfolder = $folder.FullName
-          }
-          echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin;$imfolder" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - run: refreshenv
-      - run: cpan Alien::libtiff ExtUtils::Depends ExtUtils::PkgConfig Test::Deep Test::Requires Test::Simple Readonly
-      - run: perl Makefile.PL
-      - run: dmake test TEST_VERBOSE=1
