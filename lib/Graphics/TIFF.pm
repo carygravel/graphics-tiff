@@ -210,7 +210,7 @@ our %EXPORT_TAGS = (
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our $VERSION = 20;
+our $VERSION = 21;
 
 require XSLoader;
 XSLoader::load( 'Graphics::TIFF', $VERSION );
